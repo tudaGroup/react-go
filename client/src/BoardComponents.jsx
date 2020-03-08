@@ -7,7 +7,9 @@ import { Stage, Layer, Rect, Circle, Line, Group } from 'react-konva';
 class Game extends Component {
   /**
    * 
-   * @param {number} props.boardSize  -sets the size of the board during the game 
+   * @param {number} props.boardSize - sets the size of the board during the game 
+   * @param {Player} props.player1   - Player 1
+   * @param {Player} props.player2   - Player 2
    */
   constructor(props) {
     super(props);
@@ -18,7 +20,8 @@ class Game extends Component {
         }
       ],
       round: 0,
-      player1: true
+      currPlayer: this.props.player1,
+      availableMoves: new Array(this.props.boardSize * this.props.boardSize).fill(true)
     }
   }
 
@@ -30,6 +33,7 @@ class Game extends Component {
       <div>
         <button onClick={() => this.undo(1)}>{'Undo'}</button>
         <button onClick={() => this.redo(1)}>{'Redo'}</button>
+        <button onClick={() => this.pass()}>{'Pass'}</button>
         <Board
           boardSize={this.props.boardSize}
           onClick={(x, y) => this.handleInput(x, y)}
@@ -39,33 +43,64 @@ class Game extends Component {
     )
   }
 
+  updateAvailableMoves(newField, player) {
+    let avMoves = new Array(this.props.boardSize * this.props.boardSize).fill(false);
+    for(let x = 0; x < this.props.boardSize; x++) {
+      for(let y = 0; y < this.props.boardSize; y++) {
+        if(newField[y * this.props.boardSize + x] !== null)
+          continue;
+        if(this.inputValid(x, y, newField, player))
+          avMoves[y * this.props.boardSize + x] = true;
+      }
+    }
+    return avMoves;
+  }
+
   /**
    * 
    * @param {integer} x - x coordinate of the clicked Field
    * @param {integer} y - y coordinate of the clicked Field
    */
-  handleInput(x, y) {
+  handleInput(x, y, multi, player) {
+    if(multi && player !== this.state.currPlayer)
+      return;
     const history = this.state.history.slice(0, this.state.round + 1);
     const current = history[history.length - 1];
     const fields = current.field.slice();
     
-    if(!this.inputValid(x, y))
+    if(!this.state.availableMoves[y * this.props.boardSize + x])
       return;
-    fields[y * this.props.boardSize + x] = this.state.player1;
+    fields[y * this.props.boardSize + x] = this.state.currPlayer;
     this.onNextMove(fields);
   }
   
+  pass() {
+    let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round].field, nextPlayer);
+    this.setState({
+      history: this.state.history.slice(0, this.state.round + 1).concat([
+        {field: this.state.history[this.state.round].field}
+      ]),
+      round: this.state.round + 1,
+      currPlayer: nextPlayer,
+      availableMoves: newMoves
+    });
+  }
+
   /**
    * undoes the last move made by a player
    */
   undo(steps) {
     if(this.state.round <= steps - 1)
       return;
+    let prevPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round - steps].field, prevPlayer);
     this.setState({
       history: this.state.history,
       round: this.state.round - 1,
-      player1: !this.state.player1
-    })
+      currPlayer: prevPlayer,
+      availableMoves: newMoves
+    });
   }
 
   /**
@@ -74,11 +109,14 @@ class Game extends Component {
   redo(steps) {
     if(this.state.round >= this.state.history.length - steps)
       return;
+    let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round + steps].field, nextPlayer);
     this.setState({
       history: this.state.history,
       round: this.state.round + 1,
-      player1: !this.state.player1
-    })
+      currPlayer: nextPlayer,
+      availableMoves: newMoves
+    });
   }
 
   /**
@@ -87,7 +125,7 @@ class Game extends Component {
    */
   onNextMove(fields) {
     const history = this.state.history.slice(0, this.state.round + 1);
-    const enemy = !this.state.player1;
+    const enemy = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
 
     // find all stones of enemy player (linear search)
     for(let x = 0; x < this.props.boardSize; x++) {
@@ -108,12 +146,15 @@ class Game extends Component {
     }
     
     
+    let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
+    let newMoves = this.updateAvailableMoves(fields, nextPlayer);
     this.setState({
       history: history.concat([
         {field: fields}
       ]),
       round: history.length,
-      player1: !this.state.player1
+      currPlayer: nextPlayer,
+      availableMoves: newMoves
     });
   }
 
@@ -123,17 +164,14 @@ class Game extends Component {
    * @param {integer} y - y coordinate of clicked field
    * checks if input, returns true if valid and false elsewise(suicide prevention)
    */
-  inputValid(x, y) {
-    const history = this.state.history.slice(0, this.state.round + 1);
-    const current = history[history.length - 1];
-    const fields = current.field.slice();
+  inputValid(x, y, fields, player) {
 
     // field is already set -> invalid move
     if(fields[y * this.props.boardSize + x] != null)  
       return false;
     
     // search for adjacent fields that are not set
-    let search = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), this.state.player1, fields);
+    let search = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), player, fields);
     return search[0]; 
   }
 
@@ -145,7 +183,7 @@ class Game extends Component {
    */
   searchForEmptySpot(arrayOfPos, alreadySearchedPositions, player, fields) {
     let found = false;
-    if(arrayOfPos.length == 0)
+    if(arrayOfPos.length === 0)
       return [false, alreadySearchedPositions];
 
     // for each element
@@ -224,10 +262,8 @@ class Board extends Component {
                   y={Math.floor(i/boardSize)}
                   fieldSize={fieldSize} 
                   boardSize={boardSize} 
-                  player1={who} 
-                  player1Color={'#444444'} 
-                  player2Color={'#eeeeee'}
-                  updateBoard={() => moveMade(Math.floor(i%boardSize), Math.floor(i/boardSize))}
+                  player={who} 
+                  updateBoard={() => moveMade(Math.floor(i%boardSize), Math.floor(i/boardSize, false))}
                 ></Field>
               )
             })}
@@ -248,9 +284,7 @@ class Field extends Component {
    * @param {integer}  props.y            - y coordinate of this field
    * @param {number}   props.fieldSize    - size of the field in pixels
    * @param {integer}  props.boardSize    - size of the board in fields
-   * @param {Color}    props.player1Color - color of player 1's stones
-   * @param {Color}    props.player2Color - color of player 2's stones
-   * @param {Boolean}  props.player1      - boolean value whether stone on current field is from player 1, null if no stones are set on this field
+   * @param {Player}  props.player      - boolean value whether stone on current field is from player 1, null if no stones are set on this field
    * @param {function} props.updateBoard  - function to be called if this field is called
    */
   constructor(props) {
@@ -285,10 +319,8 @@ class Field extends Component {
            <Line x={xStart} y={yStart} points={[0,0,-this.props.fieldSize/2,0]} stroke='black'/> :
            null
         }
-        {this.props.player1 !== null ? 
-          (this.props.player1 ? 
-            <Circle x={xStart} y={yStart} radius={this.props.fieldSize * 0.35} fill={this.props.player1Color}/> :
-            <Circle x={xStart} y={yStart} radius={this.props.fieldSize * 0.35} fill={this.props.player2Color}/> ) :
+        {this.props.player !== null ?
+          <Circle x={xStart} y={yStart} radius={this.props.fieldSize * 0.35} fill={this.props.player.props.playerColor}/>:
           null
         }
         <Rect
@@ -303,4 +335,21 @@ class Field extends Component {
   }
 }
 
-export default Game;
+/**
+ * props.playerColor    
+ * props.name           
+ * state.availableMoves 
+ */
+class Player extends Component{
+  render() {
+    return (
+      <div>
+        <h1>
+          {this.props.name}
+        </h1>
+      </div>
+    )
+  }
+}
+
+export { Game, Player };

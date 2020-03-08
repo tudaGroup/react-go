@@ -1,5 +1,5 @@
 import React from 'react';
-import Game from './BoardComponents';
+import { Game, Player } from './BoardComponents';
 import Main from './Main';
 
 import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
@@ -88,7 +88,7 @@ const App = () => {
     <Router>
       <Switch>
         <Route path='/main'>
-          <Game boardSize={9} />
+          <Game boardSize={9} player1={<Player name={'p1'} playerColor={'#444444'}/>} player2={<Player name={'p2'} playerColor={'#eeeeee'}/>}/>
         </Route>
 
         <Route path='/register'>
