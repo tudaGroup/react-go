@@ -22,6 +22,23 @@ class Game extends Component {
     }
   }
 
+  render() {
+    const history = this.state.history;
+    const current = history[this.state.round];
+
+    return (
+      <div>
+        <button onClick={() => this.undo(1)}>{'Undo'}</button>
+        <button onClick={() => this.redo(1)}>{'Redo'}</button>
+        <Board
+          boardSize={this.props.boardSize}
+          onClick={(x, y) => this.handleInput(x, y)}
+          currField={current.field}
+        />
+      </div>
+    )
+  }
+
   /**
    * 
    * @param {integer} x - x coordinate of the clicked Field
@@ -35,6 +52,57 @@ class Game extends Component {
     if(!this.inputValid(x, y))
       return;
     fields[y * this.props.boardSize + x] = this.state.player1;
+    this.onNextMove(fields);
+  }
+  
+  /**
+   * undoes the last move made by a player
+   */
+  undo(steps) {
+    if(this.state.round <= steps - 1)
+      return;
+    this.setState({
+      history: this.state.history,
+      round: this.state.round - 1,
+      player1: !this.state.player1
+    })
+  }
+
+  /**
+   * redoes the last undone move
+   */
+  redo(steps) {
+    if(this.state.round >= this.state.history.length - steps)
+      return;
+    this.setState({
+      history: this.state.history,
+      round: this.state.round + 1,
+      player1: !this.state.player1
+    })
+  }
+
+  onNextMove(fields) {
+    const history = this.state.history.slice(0, this.state.round + 1);
+    const enemy = !this.state.player1;
+
+    // find all stones of enemy player 
+    for(let x = 0; x < this.props.boardSize; x++) {
+      for(let y = 0; y < this.props.boardSize; y++) {
+        if(enemy === fields[y * this.props.boardSize + x]) {
+          let searchRes = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), enemy, fields);
+
+          if(!searchRes[0])
+            for(let i = 0; i < searchRes[1].length; i++) {
+              let x = i % this.props.boardSize;
+              let y = Math.floor(i / this.props.boardSize);
+              if(searchRes[1][y * this.props.boardSize + x])
+                fields[y * this.props.boardSize + x] = null;
+            }
+        }
+      }
+    }
+    
+    
     this.setState({
       history: history.concat([
         {field: fields}
@@ -44,32 +112,23 @@ class Game extends Component {
     });
   }
 
-  render() {
-    const history = this.state.history;
-    const current = history[this.state.round];
-
-    return (
-      <Board
-        boardSize={this.props.boardSize}
-        currField={current.field}
-        onClick={(x,y) => this.handleInput(x,y)}
-      />
-    )
-  }
-
   /**
    * 
    * @param {integer} x - x coordinate of clicked field
    * @param {integer} y - y coordinate of clicked field
-   * checks if input, returns true if valid and false elsewise
+   * checks if input, returns true if valid and false elsewise(suicide prevention)
    */
   inputValid(x, y) {
     const history = this.state.history.slice(0, this.state.round + 1);
     const current = history[history.length - 1];
     const fields = current.field.slice();
-    if(fields[y * this.props.boardSize + x] != null) // field is already set -> invalid move 
+
+    // field is already set -> invalid move
+    if(fields[y * this.props.boardSize + x] != null)  
       return false;
-    let search = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), this.state.player1);
+    
+    // search for adjacent fields that are not set
+    let search = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), this.state.player1, fields);
     return search[0]; 
   }
 
@@ -79,10 +138,8 @@ class Game extends Component {
    * @param   {Array<[integer, integer]>} alreadySearchedPositions - Positions that has already been searchde
    * @returns {Array<[Boolean, Points]>}  return boolean value whether an empty field was found, along with every stone on the search path
    */
-  searchForEmptySpot(arrayOfPos, alreadySearchedPositions, player) {
+  searchForEmptySpot(arrayOfPos, alreadySearchedPositions, player, fields) {
     const history = this.state.history.slice(0, this.state.round + 1);
-    const current = history[history.length - 1];
-    const fields = current.field.slice();
 
     let found = false;
     if(arrayOfPos.length == 0)
@@ -94,6 +151,10 @@ class Game extends Component {
       
       let x = element[0];
       let y = element[1];
+
+      // if already searched skip
+      if(alreadySearchedPositions[y * this.props.boardSize + x])
+        continue;
       // search for adjacent friendly stones
       for(let i = 0; i < 4; i++) {
         let firstBit = ((i & 2) >> 1);
@@ -103,14 +164,15 @@ class Game extends Component {
         let yOffset = (1 - 2 * secondBit) * (!xor);
         let adjacentX = x + xOffset;
         let adjacentY = y + yOffset;
-        if(adjacentX < 0 || adjacentY < 0 || adjacentX >= this.props.boardSize || adjacentY >= this.props.boardSize)
+
+        if(adjacentX < 0 || adjacentY < 0 || adjacentX >= this.props.boardSize || adjacentY >= this.props.boardSize || alreadySearchedPositions[adjacentY * this.props.boardSize + adjacentX])
           continue;
         let adField = fields[adjacentY * this.props.boardSize + adjacentX];
 
         // if adjacent field is null then we have found the empty spot
         if(adField === null)
           found = true;
-        else if(adField === player && !alreadySearchedPositions[adjacentY * this.props.boardSize + adjacentX]) {
+        else if(adField === player) {
           arrayOfPos.push([adjacentX, adjacentY]);
         }
       }
