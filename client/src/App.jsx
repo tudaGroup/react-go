@@ -1,5 +1,7 @@
 import React from 'react';
+import Game from './BoardComponents';
 import Main from './Main';
+
 import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
 import Particles from 'react-particles-js';
 import { Button, Card, Input } from 'antd';
@@ -86,7 +88,7 @@ const App = () => {
     <Router>
       <Switch>
         <Route path='/main'>
-          <Main />
+          <Game boardSize={9} />
         </Route>
 
         <Route path='/register'>
