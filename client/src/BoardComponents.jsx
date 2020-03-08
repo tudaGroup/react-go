@@ -81,16 +81,21 @@ class Game extends Component {
     })
   }
 
+  /**
+   * @param {Array<Boolean>} fields - current field to be manipulated
+   * Updates current playing field, removes enemy stones that have been captured. This is done linearly scanning from top-left to bottom-right.
+   */
   onNextMove(fields) {
     const history = this.state.history.slice(0, this.state.round + 1);
     const enemy = !this.state.player1;
 
-    // find all stones of enemy player 
+    // find all stones of enemy player (linear search)
     for(let x = 0; x < this.props.boardSize; x++) {
       for(let y = 0; y < this.props.boardSize; y++) {
         if(enemy === fields[y * this.props.boardSize + x]) {
           let searchRes = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), enemy, fields);
 
+          // if an empty spot was not found, then remove every stone on search path. 
           if(!searchRes[0])
             for(let i = 0; i < searchRes[1].length; i++) {
               let x = i % this.props.boardSize;
@@ -139,8 +144,6 @@ class Game extends Component {
    * @returns {Array<[Boolean, Points]>}  return boolean value whether an empty field was found, along with every stone on the search path
    */
   searchForEmptySpot(arrayOfPos, alreadySearchedPositions, player, fields) {
-    const history = this.state.history.slice(0, this.state.round + 1);
-
     let found = false;
     if(arrayOfPos.length == 0)
       return [false, alreadySearchedPositions];
