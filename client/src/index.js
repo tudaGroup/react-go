@@ -1,5 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
+import Game from './BoardComponents';
 
-ReactDOM.render(<App />, document.querySelector('#root'));
+ReactDOM.render(<Game boardSize={9}/>, document.querySelector('#root'));
