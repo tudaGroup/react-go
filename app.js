@@ -2,6 +2,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const express = require('express');
 const mongoose = require('mongoose');
+const userRouter = require('./routes/users');
+require('dotenv').config();
 
 const app = express();
 
@@ -13,6 +15,7 @@ mongoose.connect('mongodb://localhost/go', {
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(userRouter);
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
