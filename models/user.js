@@ -24,12 +24,15 @@ const UserSchema = new mongoose.Schema({
     trim: true
   },
   token: String,
-  ratings: [
-    {
-      rating: { type: Number, required: true },
-      time: { type: Date, default: new Date() }
-    }
-  ],
+  ratings: {
+    type: [
+      {
+        rating: { type: Number, required: true },
+        time: { type: Date, default: new Date() }
+      }
+    ],
+    default: [{ rating: 0, time: new Date() }]
+  },
   country: String,
   location: String,
   biography: String,
