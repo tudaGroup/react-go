@@ -8,7 +8,8 @@
     "server": "nodemon app.js",
     "client": "npm start --prefix client",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "test": "jest"
+    "test": "jest",
+    "full-install": "npm install && cd client && npm install"
   },
   "jest": {
     "testEnvironment": "node"
