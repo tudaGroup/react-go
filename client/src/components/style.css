@@ -23,7 +23,11 @@ h6 {
 }
 
 .entry__title {
-  margin: 20px 0;
+  margin: 10px 0;
+}
+
+.entry__error {
+  color: red;
 }
 
 .entry__input {

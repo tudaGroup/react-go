@@ -7,7 +7,12 @@
     "start": "node app.js",
     "server": "nodemon app.js",
     "client": "npm start --prefix client",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "test": "jest",
+    "full-install": "npm install && cd client && npm install"
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "repository": {
     "type": "git",
@@ -21,14 +26,18 @@
   "homepage": "https://github.com/tudaGroup/react-go#readme",
   "devDependencies": {
     "concurrently": "^5.1.0",
-    "nodemon": "^2.0.2"
+    "jest": "^24.9.0",
+    "nodemon": "^2.0.2",
+    "supertest": "^4.0.2"
   },
   "dependencies": {
-    "antd": "^4.0.1",
-    "axios": "^0.19.2",
+    "bcrypt": "^4.0.1",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "mongoose": "^5.9.3"
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.9.3",
+    "validator": "^12.2.0"
   }
 }
