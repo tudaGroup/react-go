@@ -23,9 +23,17 @@ mongoose.connect('mongodb://localhost/go', {
 });
 
 // Socket.IO
+let challenges = [];
+
 io.on('connection', socket => {
   console.log('New client connected');
-  io.emit('greeting', 'Hi there, client:)');
+  socket.emit('challenges', challenges); // Send challenges to new client
+  socket.on('createChallenge', data => {
+    // Update list of challenges when a new one is created
+    console.log(data);
+    challenges = data;
+    io.emit('challenges', challenges); // Broadcast updated list of challenges
+  });
   socket.on('disconnect', () => console.log('Client disconnected'));
 });
 
