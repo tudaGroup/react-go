@@ -13,6 +13,7 @@ class Game extends Component {
    */
   constructor(props) {
     super(props);
+    var initPlayingField = new Array(this.props.boardSize * this.props.boardSize).fill(null);
     this.state = {
       history:[
         {
@@ -21,9 +22,9 @@ class Game extends Component {
       ],
       round: 0,
       currPlayer: this.props.player1,
-      availableMoves: new Array(this.props.boardSize * this.props.boardSize).fill(true)
+      availableMoves: this.updateAvailableMoves(initPlayingField, initPlayingField, this.props.player1)
     }
-  }
+  } 
 
   render() {
     const history = this.state.history;
@@ -38,20 +39,20 @@ class Game extends Component {
           boardSize={this.props.boardSize}
           onClick={(x, y) => this.handleInput(x, y)}
           currField={current.field}
+          currPlayer={this.state.currPlayer}
         />
       </div>
     )
   }
 
-  updateAvailableMoves(newField, player) {
-    let avMoves = new Array(this.props.boardSize * this.props.boardSize).fill(false);
-    for(let x = 0; x < this.props.boardSize; x++) {
-      for(let y = 0; y < this.props.boardSize; y++) {
-        if(newField[y * this.props.boardSize + x] !== null)
-          continue;
-        if(this.inputValid(x, y, newField, player))
-          avMoves[y * this.props.boardSize + x] = true;
-      }
+  updateAvailableMoves(newField, oldField, player) {
+    var avMoves = new Array(this.props.boardSize * this.props.boardSize).fill(null);
+    var nextPossibleStates = this.emulateGame(newField, oldField, 1, player);
+
+    for(let i = 0; i < nextPossibleStates.length; i++) {
+      var potMove = nextPossibleStates[i];
+      let offset = potMove[1] * this.props.boardSize + potMove[0];
+      avMoves[offset] = [potMove[2], potMove[3]];
     }
     return avMoves;
   }
@@ -70,13 +71,12 @@ class Game extends Component {
     
     if(!this.state.availableMoves[y * this.props.boardSize + x])
       return;
-    fields[y * this.props.boardSize + x] = this.state.currPlayer;
-    this.onNextMove(fields);
+    this.onNextMove(this.state.availableMoves[y * this.props.boardSize + x][0]);
   }
   
   pass() {
     let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round].field, nextPlayer);
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round].field, null, nextPlayer);
     this.setState({
       history: this.state.history.slice(0, this.state.round + 1).concat([
         {field: this.state.history[this.state.round].field}
@@ -93,8 +93,8 @@ class Game extends Component {
   undo(steps) {
     if(this.state.round <= steps - 1)
       return;
-    let prevPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round - steps].field, prevPlayer);
+    let prevPlayer = steps % 2 == 1 && this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round - steps].field, null, prevPlayer);
     this.setState({
       history: this.state.history,
       round: this.state.round - 1,
@@ -109,8 +109,8 @@ class Game extends Component {
   redo(steps) {
     if(this.state.round >= this.state.history.length - steps)
       return;
-    let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round + steps].field, nextPlayer);
+    let nextPlayer = steps % 2 == 1 && this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round + steps].field, null, nextPlayer);
     this.setState({
       history: this.state.history,
       round: this.state.round + 1,
@@ -120,34 +120,15 @@ class Game extends Component {
   }
 
   /**
+   * @deprecated
    * @param {Array<Boolean>} fields - current field to be manipulated
    * Updates current playing field, removes enemy stones that have been captured. This is done linearly scanning from top-left to bottom-right.
    */
   onNextMove(fields) {
     const history = this.state.history.slice(0, this.state.round + 1);
-    const enemy = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-
-    // find all stones of enemy player (linear search)
-    for(let x = 0; x < this.props.boardSize; x++) {
-      for(let y = 0; y < this.props.boardSize; y++) {
-        if(enemy === fields[y * this.props.boardSize + x]) {
-          let searchRes = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), enemy, fields);
-
-          // if an empty spot was not found, then remove every stone on search path. 
-          if(!searchRes[0])
-            for(let i = 0; i < searchRes[1].length; i++) {
-              let x = i % this.props.boardSize;
-              let y = Math.floor(i / this.props.boardSize);
-              if(searchRes[1][y * this.props.boardSize + x])
-                fields[y * this.props.boardSize + x] = null;
-            }
-        }
-      }
-    }
-    
     
     let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(fields, nextPlayer);
+    let newMoves = this.updateAvailableMoves(fields, history[this.state.round].field, nextPlayer);
     this.setState({
       history: history.concat([
         {field: fields}
@@ -159,9 +140,10 @@ class Game extends Component {
   }
 
   /**
-   * 
+   * @deprecated
    * @param {integer} x - x coordinate of clicked field
    * @param {integer} y - y coordinate of clicked field
+   * @returns boolean
    * checks if input, returns true if valid and false elsewise(suicide prevention)
    */
   inputValid(x, y, fields, player) {
@@ -174,6 +156,108 @@ class Game extends Component {
     let search = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), player, fields);
     return search[0]; 
   }
+  
+
+  /**
+   * 
+   * @param {Array<Player>} field  - playing field on current path
+   * @param {Integer}       depth  - how deep should the search go?
+   * @param {Player}        player - current player on current node
+   * @returns {[Integer, Integer, Field, Player]} - x and y coordinates, the modified playing field, the current turn player; returns all possible moves with the would-be playing field and the evaluated scores
+   * emulates all possible game steps into "depth" steps using a backtracking algorithm(not suitable for ai on a big board[19 x 19]) and evaluates the points
+   */
+  emulateGame(field, oldField,  depth, player) {
+    if(depth <= 0)
+      return [[-1, -1, field, this.getPoints(field)]];
+
+    let enemy = player === this.props.player1 ? this.props.player2 : this.props.player1;
+    let res = [];
+    const playerIndex = player === this.props.player1 ? 0 : 1;
+    
+    let potentialMoves = this.getEmptySpots(field);
+    potentialMoves.forEach(spot => {
+      let newField = field.slice();
+      let x = spot[0];
+      let y = spot[1];
+      let offset = y * this.props.boardSize + x;
+      newField[offset] = player;
+      this.updateBoard(newField, player);
+      if(newField[offset] !== player) // suicidal move
+        return;
+      if(newField.equals(oldField)) // recurring moves
+        return;
+      let recursiveResult = this.emulateGame(newField, field, depth - 1, enemy); // recursively emulate child game states
+      let bestPoints = Number.MIN_VALUE; 
+      let bestIndex = -1;
+      recursiveResult.forEach((emuRes, i) => { // evaluate best points for current player
+        if(emuRes[3][playerIndex] > bestPoints) {
+          bestPoints = emuRes[3][playerIndex];
+          bestIndex = i;
+        }
+        res.push([x, y, newField, recursiveResult[i]]);
+      });
+    });
+    return res;
+  }
+
+  getPoints(field) {
+    return [0, 0];
+  }
+
+  updateBoard(field, player) {
+    const enemy = player === this.props.player1 ? this.props.player2 : this.props.player1;
+
+    let currentPlayerStones = [];
+    //first update all stones of enemy player (linear search)
+    for(let x = 0; x < this.props.boardSize; x++) {
+      for(let y = 0; y < this.props.boardSize; y++) {
+        let currField = field[y * this.props.boardSize + x];
+        if(enemy === currField) {
+          let searchRes = this.searchForEmptySpot([[x, y]], new Array(this.props.boardSize * this.props.boardSize).fill(false), enemy, field);
+
+          // if an empty spot was not found, then remove every stone on search path. 
+          if(!searchRes[0])
+            for(let i = 0; i < searchRes[1].length; i++) {
+              let x = i % this.props.boardSize;
+              let y = Math.floor(i / this.props.boardSize);
+              if(searchRes[1][y * this.props.boardSize + x])
+                field[y * this.props.boardSize + x] = null;
+            }
+        } else if(player === currField){
+          currentPlayerStones.push([x, y]);
+        }
+      }
+    }
+    currentPlayerStones.forEach(pos => {
+      if(field[pos[1] * this.props.boardSize + pos[0]] == player) {
+        let searchRes = this.searchForEmptySpot([[pos[0], pos[1]]], new Array(this.props.boardSize * this.props.boardSize).fill(false), player, field);
+
+          // if an empty spot was not found, then remove every stone on search path. 
+          if(!searchRes[0])
+            for(let i = 0; i < searchRes[1].length; i++) {
+              let x = i % this.props.boardSize;
+              let y = Math.floor(i / this.props.boardSize);
+              if(searchRes[1][y * this.props.boardSize + x])
+                field[y * this.props.boardSize + x] = null;
+            }
+      }
+    });
+  }
+
+  /**
+   * 
+   * @param   {Array<Player>}           field - current playing field
+   * @returns {Array<Integer, Integer>}
+   */
+  getEmptySpots(field) {
+    let res = [];
+    field.forEach((spot, index) => {
+      if(spot === null)
+        res.push([index % this.props.boardSize, Math.floor(index / this.props.boardSize)]);
+    });
+    return res;
+  }
+
 
   /**
    * Search algorithm(DFS) for an empty spot, if empty spot is not found player loses his stones in alreadySearchedPositions(not fully implemented yet, coming soon)
@@ -234,6 +318,7 @@ class Board extends Component {
    * @param {integer}        props.boardsSize - size of the board in fields
    * @param {function}       props.onClick    - function to be called if input is detected
    * @param {Array<Boolean>} props.currField  - current setting of the field
+   * @param {Player}         props.currPlayer - current Player
    */
   constructor(props) {
     super(props);
@@ -245,6 +330,7 @@ class Board extends Component {
     let fieldSize = boardHW / boardSize;
     let moveMade = this.props.onClick;
     let field = this.props.currField;
+    let currPlayer = this.props.currPlayer;
     return (
       <div>
         <Stage width={boardHW} height={boardHW}>
@@ -263,7 +349,7 @@ class Board extends Component {
                   fieldSize={fieldSize} 
                   boardSize={boardSize} 
                   player={who} 
-                  updateBoard={() => moveMade(Math.floor(i%boardSize), Math.floor(i/boardSize, false))}
+                  updateBoard={() => moveMade(Math.floor(i%boardSize), Math.floor(i/boardSize, false), false, currPlayer)}
                 ></Field>
               )
             })}
@@ -351,5 +437,35 @@ class Player extends Component{
     )
   }
 }
+
+// Warn if overriding existing method
+if(Array.prototype.equals)
+    console.warn("Overriding existing Array.prototype.equals. Possible causes: New API defines the method, there's a framework conflict or you've got double inclusions in your code.");
+// attach the .equals method to Array's prototype to call it on any array
+Array.prototype.equals = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return false;
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return false;
+
+    for (var i = 0, l=this.length; i < l; i++) {
+        // Check if we have nested arrays
+        if (this[i] instanceof Array && array[i] instanceof Array) {
+            // recurse into the nested arrays
+            if (!this[i].equals(array[i]))
+                return false;       
+        }           
+        else if (this[i] != array[i]) { 
+            // Warning - two different object instances will never be equal: {x:20} != {x:20}
+            return false;   
+        }           
+    }       
+    return true;
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "equals", {enumerable: false});
 
 export { Game, Player };

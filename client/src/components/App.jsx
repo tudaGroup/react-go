@@ -7,6 +7,7 @@ import history from '../history';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import Particles from 'react-particles-js';
 import './style.css';
+import { Game, Player } from './BoardComponents';
 
 const particlesOptions = {
   particles: {
@@ -22,6 +23,10 @@ const particlesOptions = {
 
 const App = () => {
   return (
+    <Game boardSize={6} player1={<Player name={"p1"} playerColor={444444}/>} player2={<Player name={"p2"} playerColor={'#eeeeee'}/>}></Game>
+  )
+  /*
+  return (
     <Router history={history}>
       <Particles
         className='particles'
@@ -36,6 +41,7 @@ const App = () => {
       </Switch>
     </Router>
   );
+  */
 };
 
 export default App;
