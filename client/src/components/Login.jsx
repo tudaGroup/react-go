@@ -3,6 +3,7 @@ import { Button, Card, Input } from 'antd';
 import { Link } from 'react-router-dom';
 import history from '../history';
 import api from '../api';
+import { RadiusBottomrightOutlined } from '@ant-design/icons';
 
 const Login = () => {
   const [name, setName] = useState('');
@@ -62,8 +63,12 @@ const Login = () => {
           Sign in
         </Button>
         <div className='entry__links'>
-          <Link to='/register'>Register</Link>
-          <Link to='/reset'>Password reset</Link>
+          <Link className='entry__links' to='/register'>
+            Register
+          </Link>
+          <Link className='entry__links' to='/reset'>
+            Password reset
+          </Link>
         </div>
       </Card>
     </div>

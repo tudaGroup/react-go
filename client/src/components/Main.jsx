@@ -3,15 +3,25 @@ import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
 import {
-  Modal,
   Button,
-  Select,
-  Slider,
-  InputNumber,
-  Row,
   Col,
-  Radio
+  InputNumber,
+  Menu,
+  Modal,
+  Radio,
+  Row,
+  Select,
+  Slider
 } from 'antd';
+import {
+  ClockCircleOutlined,
+  DingdingOutlined,
+  PoweroffOutlined,
+  SettingOutlined,
+  TrophyOutlined,
+  UpCircleOutlined,
+  UserOutlined
+} from '@ant-design/icons';
 const { Option } = Select;
 
 let socket;
@@ -86,8 +96,8 @@ const Main = () => {
     setModalVisible(false);
   };
 
-  const handleSelect = value => {
-    setSelectedBoardSize(parseInt(value));
+  const handleBoardSizeSelect = e => {
+    setSelectedBoardSize(e.target.value);
   };
 
   const handleTimeSlider = value => {
@@ -118,108 +128,125 @@ const Main = () => {
   }
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        backgroundColor: '#151515',
-        width: '100%',
-        height: '100%',
-        color: 'white'
-      }}
-    >
-      <div style={{ textDecoration: 'underline' }}>Logged in as</div>
-      <div>Username: {username}</div>
-      <div>User-ID: {userId}</div>
-      <div>Rating: {rating}</div>
-      <Button onClick={handleLogout}>Logout</Button>
-
-      <div style={{ marginTop: '40px' }}>
-        <Button type='primary' onClick={showModal}>
-          CREATE A GAME
-        </Button>
-        <Modal
-          title='Create a game'
-          visible={modalVisible}
-          onOk={handleModalOk}
-          onCancel={handleModalCancel}
-        >
-          <Row>
-            <Col span={4}>Board Size</Col>
-            <Col span={12}>
-              <Select
-                defaultValue='9'
-                style={{ width: 150 }}
-                onChange={handleSelect}
-              >
-                <Option value='9'>Small (9x9)</Option>
-                <Option value='13'>Medium (13x13)</Option>
-                <Option value='19'>Large (19x19)</Option>
-              </Select>
-            </Col>
-          </Row>
-          <Row>
-            <Col span={4}>Time Limit</Col>
-            <Col span={8}>
-              <Slider
-                min={5}
-                max={40}
-                onChange={handleTimeSlider}
-                value={typeof selectedTime === 'number' ? selectedTime : 5}
-              />
-            </Col>
-            <Col span={4}>
-              <InputNumber
-                min={5}
-                max={40}
-                style={{ marginLeft: 16 }}
-                value={selectedTime}
-                onChange={handleTimeSlider}
-              />
-            </Col>
-          </Row>
-          <Row>
-            <Col span={4}>Increment</Col>
-            <Col span={8}>
-              <Slider
-                min={0}
-                max={40}
-                onChange={handleIncrementSlider}
-                value={
-                  typeof selectedIncrement === 'number' ? selectedIncrement : 0
-                }
-              />
-            </Col>
-            <Col span={4}>
-              <InputNumber
-                min={0}
-                max={40}
-                style={{ marginLeft: 16 }}
-                value={selectedIncrement}
-                onChange={handleIncrementSlider}
-              />
-            </Col>
-          </Row>
-          <Row>
-            <Radio.Group
-              value={selectedGameMode}
-              onChange={handleGameModeChange}
-            >
-              <Radio.Button value='casual'>Casual</Radio.Button>
-              <Radio.Button value='rated'>Rated</Radio.Button>
-            </Radio.Group>
-          </Row>
-        </Modal>
+    <div className='main'>
+      <div id='menu'>
+        <span className='menu__item'>
+          <UserOutlined /> {username}
+        </span>
+        <span className='menu__item'>
+          <SettingOutlined /> Preferences
+        </span>
+        <span className='menu__item' onClick={handleLogout}>
+          <PoweroffOutlined /> Sign out
+        </span>
       </div>
-      <div style={{ marginTop: '30px' }}>
-        <div style={{ textDecoration: 'underline' }}>Challenges</div>
-        {challenges.map(({ name, id, rating, size, time, increment, mode }) => (
-          <div style={{ margin: '10px', border: '1px solid white' }}>
-            Name: {name} | Rating: {rating} | Mode: {mode} | Size: {size} |
-            Time: {time}
-            min | Increment: {increment}s
+
+      <div id='challenge__box'>
+        {challenges.map(({ name, rating, size, time, increment, mode }) => (
+          <div className='challenge__items'>
+            <Row justify='space-around'>
+              <Col>{name}</Col>
+              <Col>
+                <TrophyOutlined /> {rating}
+              </Col>
+              <Col>
+                <UpCircleOutlined /> {size}x{size}
+              </Col>
+              <Col>
+                <ClockCircleOutlined /> {time}+{increment}
+              </Col>
+              <Col>
+                <DingdingOutlined /> {mode}
+              </Col>
+            </Row>
           </div>
         ))}
+        <div id='challenge_create'>
+          <Button
+            type='primary'
+            style={{
+              textTransform: 'uppercase',
+              marginTop: '15px'
+            }}
+            onClick={showModal}
+          >
+            Create a game
+          </Button>
+          <Modal
+            title='Create a game'
+            visible={modalVisible}
+            onOk={handleModalOk}
+            onCancel={handleModalCancel}
+          >
+            <Row gutter={[0, 20]} justify='space-around'>
+              <Col span={4}>Time Limit</Col>
+              <Col span={8}>
+                <Slider
+                  min={5}
+                  max={40}
+                  onChange={handleTimeSlider}
+                  value={typeof selectedTime === 'number' ? selectedTime : 5}
+                />
+              </Col>
+              <Col span={4}>
+                <InputNumber
+                  min={5}
+                  max={40}
+                  style={{ marginLeft: 16 }}
+                  value={selectedTime}
+                  onChange={handleTimeSlider}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[0, 20]} justify='space-around'>
+              <Col span={4}>Increment</Col>
+              <Col span={8}>
+                <Slider
+                  min={0}
+                  max={40}
+                  onChange={handleIncrementSlider}
+                  value={
+                    typeof selectedIncrement === 'number'
+                      ? selectedIncrement
+                      : 0
+                  }
+                />
+              </Col>
+              <Col span={4}>
+                <InputNumber
+                  min={0}
+                  max={40}
+                  style={{ marginLeft: 16 }}
+                  value={selectedIncrement}
+                  onChange={handleIncrementSlider}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[0, 20]} justify='space-around'>
+              <Col>
+                <Radio.Group
+                  value={selectedBoardSize}
+                  onChange={handleBoardSizeSelect}
+                >
+                  <Radio.Button value={9}>Small (9x9)</Radio.Button>
+                  <Radio.Button value={13}>Medium (13x13)</Radio.Button>
+                  <Radio.Button value={19}>Large (19x19)</Radio.Button>
+                </Radio.Group>
+              </Col>
+            </Row>
+            <Row gutter={[0, 20]} justify='space-around'>
+              <Col>
+                <Radio.Group
+                  value={selectedGameMode}
+                  onChange={handleGameModeChange}
+                >
+                  <Radio.Button value='casual'>Casual</Radio.Button>
+                  <Radio.Button value='rated'>Rated</Radio.Button>
+                </Radio.Group>
+              </Col>
+            </Row>
+          </Modal>
+        </div>
       </div>
     </div>
   );
