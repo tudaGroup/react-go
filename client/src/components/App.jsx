@@ -5,7 +5,7 @@ import Register from './Register';
 import PasswordReset from './PasswordReset';
 import GameWindow from './GameWindow';
 import history from '../history';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import { Router, Switch, Route } from 'react-router-dom';
 import Particles from 'react-particles-js';
 import './style.css';
 

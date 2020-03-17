@@ -3,7 +3,6 @@ import { Button, Card, Input } from 'antd';
 import { Link } from 'react-router-dom';
 import history from '../history';
 import api from '../api';
-import { RadiusBottomrightOutlined } from '@ant-design/icons';
 
 const Login = () => {
   const [name, setName] = useState('');

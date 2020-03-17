@@ -2,17 +2,7 @@ import React, { useState, useEffect } from 'react';
 import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
-import {
-  Button,
-  Col,
-  InputNumber,
-  Menu,
-  Modal,
-  Radio,
-  Row,
-  Select,
-  Slider
-} from 'antd';
+import { Button, Col, InputNumber, Modal, Radio, Row, Slider } from 'antd';
 import {
   ClockCircleOutlined,
   DingdingOutlined,
@@ -22,7 +12,6 @@ import {
   UpCircleOutlined,
   UserOutlined
 } from '@ant-design/icons';
-const { Option } = Select;
 
 let socket;
 
@@ -42,7 +31,6 @@ const Main = () => {
     // Redirect to login page if user is without token
     if (token === null) {
       history.push('/login');
-      window.location.reload();
     }
     // Make a request for profile information
     api
@@ -58,15 +46,19 @@ const Main = () => {
         socket = socketIOClient('http://localhost:8000');
         socket.on('challenges', data => {
           // Receive open challenges
-          console.log(data);
           setChallenges(data);
         });
-        // TODO: Notify that challenge got accepted
+        // Get Notified that challenge got accepted
         socket.on('acceptChallenge', data => {
-          // If the accepted challenge was our challenge...
+          // If the accepted challenge was the current user's challenge
           if (data.createdChallenge === res.data._id) {
             alert(data.challenger + ' has accepted your challenge!');
           }
+
+          // Redirect to game page
+          history.push(
+            `/game/${data.createdChallenge}-${data.acceptedChallenge}`
+          );
         });
       });
   }, []);
@@ -75,7 +67,6 @@ const Main = () => {
     // Delete token in local storage and redirect to login
     localStorage.removeItem('jwt');
     history.push('/login');
-    window.location.reload();
   };
 
   const showModal = e => {
@@ -97,7 +88,7 @@ const Main = () => {
 
     // Delete old created challenge if there is any
     let filteredChallenges = challenges.filter(
-      challenge => challenge.name != username
+      challenge => challenge.name !== username
     );
 
     // Send new challenge to server
@@ -136,24 +127,22 @@ const Main = () => {
   ) => {
     // Remove clicked challenge from state and update server
     let filteredChallenges = challenges.filter(
-      challenge => challenge.name != name
+      challenge => challenge.name !== name
     );
     setChallenges(filteredChallenges);
     socket.emit('updateChallenges', filteredChallenges);
 
     // If clicked by a user who did not create the challenge
-    if (username != name) {
-      console.log('Accept challenge...');
+    if (username !== name) {
       socket.emit('acceptChallenge', {
         createdChallenge: id,
         acceptedChallenge: userId,
         challenger: username
       });
 
-      // TODO
-      // redirect to game page
+      // Redirect to game page
+      history.push(`/game/${id}-${userId}`);
     }
-    console.log({ name, rating, size, time, increment, mode });
   };
 
   if (!username) {
