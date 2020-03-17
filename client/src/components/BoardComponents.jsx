@@ -13,46 +13,57 @@ class Game extends Component {
    */
   constructor(props) {
     super(props);
-    var initPlayingField = new Array(this.props.boardSize * this.props.boardSize).fill(null);
+    var initState = {field: new Array(this.props.boardSize * this.props.boardSize).fill(null), points: {player1score: 0, player2score: 0}};
     this.state = {
       history:[
         {
-          field: new Array(this.props.boardSize * this.props.boardSize).fill(null)
+          gameState: initState,
+          passCount: 0
         }
       ],
       round: 0,
       currPlayer: this.props.player1,
-      availableMoves: this.updateAvailableMoves(initPlayingField, initPlayingField, this.props.player1)
+      availableMoves: this.updateAvailableMoves(initState, initState, this.props.player1),
+      gameEnd: false
     }
   } 
 
   render() {
     const history = this.state.history;
     const current = history[this.state.round];
-
+    console.log("this.state.round: " + this.state.round + ", this.state.gameEnd: " + this.state.gameEnd +  ", this.history[current].passCount: " + this.state.history[this.state.round].passCount);
     return (
       <div>
         <button onClick={() => this.undo(1)}>{'Undo'}</button>
         <button onClick={() => this.redo(1)}>{'Redo'}</button>
         <button onClick={() => this.pass()}>{'Pass'}</button>
+        {this.state.gameEnd ? <h1 style={{ color:'white' }}>Game has ended!</h1> : null}
+        <h1 style={{ color:'white' }}>{'passCount = ' + this.state.history[this.state.round].passCount}</h1>
+        <h1 style={{ color:'white' }}>{""+this.props.player1.props.name+":" +this.state.history[this.state.round].gameState.points.player1score+", "+this.props.player2.props.name+": "+this.state.history[this.state.round].gameState.points.player2score}</h1>
         <Board
           boardSize={this.props.boardSize}
           onClick={(x, y) => this.handleInput(x, y)}
-          currField={current.field}
+          currField={current.gameState.field}
           currPlayer={this.state.currPlayer}
         />
       </div>
     )
   }
 
+  /**
+   * @param {Field}  newField - new updated field
+   * @param {Field}  oldField - field prior to pre-updated field(mainly to test if recurring moves have been made)
+   * @param {Player} player   - currently playing Player
+   * searches for all possible moves 
+   */
   updateAvailableMoves(newField, oldField, player) {
     var avMoves = new Array(this.props.boardSize * this.props.boardSize).fill(null);
     var nextPossibleStates = this.emulateGame(newField, oldField, 1, player);
 
     for(let i = 0; i < nextPossibleStates.length; i++) {
       var potMove = nextPossibleStates[i];
-      let offset = potMove[1] * this.props.boardSize + potMove[0];
-      avMoves[offset] = [potMove[2], potMove[3]];
+      let offset = potMove.y * this.props.boardSize + potMove.x;
+      avMoves[offset] = {field: potMove.field, points: potMove.points};
     }
     return avMoves;
   }
@@ -63,28 +74,31 @@ class Game extends Component {
    * @param {integer} y - y coordinate of the clicked Field
    */
   handleInput(x, y, multi, player) {
-    if(multi && player !== this.state.currPlayer)
+    if(multi && player !== this.state.currPlayer || this.state.gameEnd)
       return;
     const history = this.state.history.slice(0, this.state.round + 1);
     const current = history[history.length - 1];
-    const fields = current.field.slice();
     
     if(!this.state.availableMoves[y * this.props.boardSize + x])
       return;
-    this.onNextMove(this.state.availableMoves[y * this.props.boardSize + x][0]);
+    this.onNextMove(this.state.availableMoves[y * this.props.boardSize + x]);
   }
   
   pass() {
     let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round].field, null, nextPlayer);
-    this.setState({
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round].gameState, null, nextPlayer);
+    let newState = {
       history: this.state.history.slice(0, this.state.round + 1).concat([
-        {field: this.state.history[this.state.round].field}
+        {
+          gameState: this.state.history[this.state.round].gameState,
+          passCount: this.state.history[this.state.round].passCount + 1
+        }
       ]),
       round: this.state.round + 1,
       currPlayer: nextPlayer,
       availableMoves: newMoves
-    });
+    };
+    this.updateGame(newState);
   }
 
   /**
@@ -94,13 +108,15 @@ class Game extends Component {
     if(this.state.round <= steps - 1)
       return;
     let prevPlayer = steps % 2 == 1 && this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round - steps].field, null, prevPlayer);
-    this.setState({
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round - steps].gameState, null, prevPlayer);
+    let newState = {
       history: this.state.history,
-      round: this.state.round - 1,
+      round: this.state.round - steps,
       currPlayer: prevPlayer,
-      availableMoves: newMoves
-    });
+      availableMoves: newMoves,
+      gameEnd: false
+    };
+    this.updateGame(newState);
   }
 
   /**
@@ -110,17 +126,18 @@ class Game extends Component {
     if(this.state.round >= this.state.history.length - steps)
       return;
     let nextPlayer = steps % 2 == 1 && this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round + steps].field, null, nextPlayer);
-    this.setState({
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round + steps].gameState, null, nextPlayer);
+    let newState = {
       history: this.state.history,
-      round: this.state.round + 1,
+      round: this.state.round + steps,
       currPlayer: nextPlayer,
       availableMoves: newMoves
-    });
+    };
+    this.updateGame(newState);
   }
 
   /**
-   * @deprecated
+   * 
    * @param {Array<Boolean>} fields - current field to be manipulated
    * Updates current playing field, removes enemy stones that have been captured. This is done linearly scanning from top-left to bottom-right.
    */
@@ -128,15 +145,20 @@ class Game extends Component {
     const history = this.state.history.slice(0, this.state.round + 1);
     
     let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(fields, history[this.state.round].field, nextPlayer);
-    this.setState({
+    let newMoves = this.updateAvailableMoves(fields, history[this.state.round].gameState, nextPlayer);
+    let newState = {
       history: history.concat([
-        {field: fields}
+        {
+          gameState: fields,
+          passCount: 0
+        }
       ]),
       round: history.length,
       currPlayer: nextPlayer,
-      availableMoves: newMoves
-    });
+      availableMoves: newMoves,
+      gameEnd: false
+    };
+    this.updateGame(newState);
   }
 
   /**
@@ -160,51 +182,58 @@ class Game extends Component {
 
   /**
    * 
-   * @param {Array<Player>} field  - playing field on current path
-   * @param {Integer}       depth  - how deep should the search go?
-   * @param {Player}        player - current player on current node
-   * @returns {[Integer, Integer, Field, Player]} - x and y coordinates, the modified playing field, the current turn player; returns all possible moves with the would-be playing field and the evaluated scores
+   * @param {GameState}   newState    - playing field on current path
+   * @param {GameState}   oldState - old playing field prior to original playing field
+   * @param {Number} depth    - how deep should the search go?
+   * @param {Player}  player   - current player on current node
+   * @returns {{x: Number, y: Number, field: Field, points: {player1score: Integer, player2score: Integer}}} - x and y coordinates, the modified playing field, points on modified playing field; returns all possible moves with the would-be playing field and the evaluated scores
    * emulates all possible game steps into "depth" steps using a backtracking algorithm(not suitable for ai on a big board[19 x 19]) and evaluates the points
    */
-  emulateGame(field, oldField,  depth, player) {
+  emulateGame(newState, oldState,  depth, player) {
     if(depth <= 0)
-      return [[-1, -1, field, this.getPoints(field)]];
+      return [{x: -1, y: -1, field: newState, points:  this.getPoints(newState)}];
 
     let enemy = player === this.props.player1 ? this.props.player2 : this.props.player1;
     let res = [];
     const playerIndex = player === this.props.player1 ? 0 : 1;
     
-    let potentialMoves = this.getEmptySpots(field);
+    let potentialMoves = this.getSpotsOf(newState, null);
     potentialMoves.forEach(spot => {
-      let newField = field.slice();
+      let newField = newState.field.slice();
       let x = spot[0];
       let y = spot[1];
       let offset = y * this.props.boardSize + x;
       newField[offset] = player;
-      this.updateBoard(newField, player);
+      this.applyRulesBoard(newField, player);
       if(newField[offset] !== player) // suicidal move
+        return; 
+      if(newField.equals(oldState)) // recurring moves
         return;
-      if(newField.equals(oldField)) // recurring moves
-        return;
-      let recursiveResult = this.emulateGame(newField, field, depth - 1, enemy); // recursively emulate child game states
+      let recursiveResult = this.emulateGame({field :newField, points: null}, newState, depth - 1, enemy); // recursively emulate child game states
       let bestPoints = Number.MIN_VALUE; 
-      let bestIndex = -1;
+      let best = {player1: -1, player2: -1};
       recursiveResult.forEach((emuRes, i) => { // evaluate best points for current player
-        if(emuRes[3][playerIndex] > bestPoints) {
-          bestPoints = emuRes[3][playerIndex];
-          bestIndex = i;
+        if((playerIndex === 0 ? emuRes.points.player1score : emuRes.points.player2score) > bestPoints) {
+          bestPoints = emuRes.points[playerIndex];
+          best = emuRes.points;
         }
-        res.push([x, y, newField, recursiveResult[i]]);
+        res.push({x: x, y: y, field: newField, points: best});
       });
     });
     return res;
   }
 
+  /**
+   * score rating system(stone scoring)
+   * @param {Field} field - field to be evaluated scores for
+   */
   getPoints(field) {
-    return [0, 0];
+    let player1score = this.getSpotsOf(field, this.props.player1).length;
+    let player2score = this.getSpotsOf(field, this.props.player2).length;
+    return {player1score: player1score, player2score: player2score};
   }
 
-  updateBoard(field, player) {
+  applyRulesBoard(field, player) {
     const enemy = player === this.props.player1 ? this.props.player2 : this.props.player1;
 
     let currentPlayerStones = [];
@@ -244,15 +273,16 @@ class Game extends Component {
     });
   }
 
+
   /**
    * 
    * @param   {Array<Player>}           field - current playing field
    * @returns {Array<Integer, Integer>}
    */
-  getEmptySpots(field) {
+  getSpotsOf(field, player) {
     let res = [];
-    field.forEach((spot, index) => {
-      if(spot === null)
+    field.field.forEach((spot, index) => {
+      if(spot === player)
         res.push([index % this.props.boardSize, Math.floor(index / this.props.boardSize)]);
     });
     return res;
@@ -307,6 +337,19 @@ class Game extends Component {
     return[found, alreadySearchedPositions];
   }
 
+
+  updateGame(newState) {
+    if(newState.availableMoves.length < 1 || newState.history[newState.round].passCount >= 2)
+      this.setState({
+        history: newState.history,
+        round: newState.round,
+        currPlayer: newState.currPlayer,
+        availableMoves: newState.availableMoves,
+        gameEnd: true
+      });
+    else 
+      this.setState(newState);
+  }
 }
 
 /**
