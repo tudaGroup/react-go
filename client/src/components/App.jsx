@@ -3,6 +3,7 @@ import Main from './Main';
 import Login from './Login';
 import Register from './Register';
 import PasswordReset from './PasswordReset';
+import GameWindow from './GameWindow';
 import history from '../history';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import Particles from 'react-particles-js';
@@ -32,6 +33,7 @@ const App = () => {
         <Route path='/register' component={Register} />
         <Route path='/reset' component={PasswordReset} />
         <Route path='/login' component={Login} />
+        <Route path='/game/:id' component={GameWindow} />
         <Route path='/' component={Main} />
       </Switch>
     </Router>

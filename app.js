@@ -6,7 +6,7 @@ const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const userRouter = require('./routes/users');
 require('dotenv').config();
-
+const { setChallenges, getChallenges } = require('./challenges');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -23,16 +23,16 @@ mongoose.connect('mongodb://localhost/go', {
 });
 
 // Socket.IO
-let challenges = [];
-
 io.on('connection', socket => {
   console.log('New client connected');
-  socket.emit('challenges', challenges); // Send challenges to new client
-  socket.on('createChallenge', data => {
+  socket.emit('challenges', getChallenges()); // Send challenges to new client
+  socket.on('updateChallenges', data => {
     // Update list of challenges when a new one is created
-    console.log(data);
-    challenges = data;
-    io.emit('challenges', challenges); // Broadcast updated list of challenges
+    setChallenges(data);
+    io.emit('challenges', getChallenges()); // Broadcast updated list of challenges
+  });
+  socket.on('acceptChallenge', data => {
+    socket.broadcast.emit('acceptChallenge', data);
   });
   socket.on('disconnect', () => console.log('Client disconnected'));
 });

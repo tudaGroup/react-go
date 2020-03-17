@@ -61,6 +61,13 @@ const Main = () => {
           console.log(data);
           setChallenges(data);
         });
+        // TODO: Notify that challenge got accepted
+        socket.on('acceptChallenge', data => {
+          // If the accepted challenge was our challenge...
+          if (data.createdChallenge === res.data._id) {
+            alert(data.challenger + ' has accepted your challenge!');
+          }
+        });
       });
   }, []);
 
@@ -87,9 +94,15 @@ const Main = () => {
       increment: selectedIncrement,
       mode: selectedGameMode
     };
-    // send new challenge to server
-    setChallenges([...challenges, challenge]);
-    socket.emit('createChallenge', [...challenges, challenge]);
+
+    // Delete old created challenge if there is any
+    let filteredChallenges = challenges.filter(
+      challenge => challenge.name != username
+    );
+
+    // Send new challenge to server
+    setChallenges([...filteredChallenges, challenge]);
+    socket.emit('updateChallenges', [...filteredChallenges, challenge]);
   };
 
   const handleModalCancel = e => {
@@ -112,19 +125,39 @@ const Main = () => {
     setSelectedGameMode(e.target.value);
   };
 
-  if (!username) {
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          backgroundColor: '#151515',
-          width: '100%',
-          height: '100%',
-          color: 'white'
-        }}
-      ></div>
+  const handleChallengeClick = (
+    name,
+    id,
+    rating,
+    size,
+    time,
+    increment,
+    mode
+  ) => {
+    // Remove clicked challenge from state and update server
+    let filteredChallenges = challenges.filter(
+      challenge => challenge.name != name
     );
+    setChallenges(filteredChallenges);
+    socket.emit('updateChallenges', filteredChallenges);
+
+    // If clicked by a user who did not create the challenge
+    if (username != name) {
+      console.log('Accept challenge...');
+      socket.emit('acceptChallenge', {
+        createdChallenge: id,
+        acceptedChallenge: userId,
+        challenger: username
+      });
+
+      // TODO
+      // redirect to game page
+    }
+    console.log({ name, rating, size, time, increment, mode });
+  };
+
+  if (!username) {
+    return <div className='main'></div>;
   }
 
   return (
@@ -142,8 +175,21 @@ const Main = () => {
       </div>
 
       <div id='challenge__box'>
-        {challenges.map(({ name, rating, size, time, increment, mode }) => (
-          <div className='challenge__items'>
+        {challenges.map(({ name, id, rating, size, time, increment, mode }) => (
+          <div
+            className='challenge__items'
+            onClick={() =>
+              handleChallengeClick(
+                name,
+                id,
+                rating,
+                size,
+                time,
+                increment,
+                mode
+              )
+            }
+          >
             <Row justify='space-around'>
               <Col>{name}</Col>
               <Col>
