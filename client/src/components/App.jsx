@@ -23,10 +23,6 @@ const particlesOptions = {
 
 const App = () => {
   return (
-    <Game boardSize={6} player1={<Player name={"p1"} playerColor={444444}/>} player2={<Player name={"p2"} playerColor={'#eeeeee'}/>}></Game>
-  )
-  /*
-  return (
     <Router history={history}>
       <Particles
         className='particles'
@@ -39,9 +35,9 @@ const App = () => {
         <Route path='/login' component={Login} />
         <Route path='/' component={Main} />
       </Switch>
+    {/* <Game boardSize={19} player1={<Player name={"Player 1"} playerColor={"#453f3f"}/>} player2={<Player name={"Player 2"} playerColor={"#f7f7f7"}/>}/>*/}
     </Router>
   );
-  */
 };
 
 export default App;

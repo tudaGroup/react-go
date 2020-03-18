@@ -37,7 +37,7 @@ class Game extends Component {
         <button onClick={() => this.undo(1)}>{'Undo'}</button>
         <button onClick={() => this.redo(1)}>{'Redo'}</button>
         <button onClick={() => this.pass()}>{'Pass'}</button>
-        {this.state.gameEnd ? <h1 style={{ color:'white' }}>Game has ended!</h1> : null}
+        {this.state.gameEnd ? <h1 style={{ color:'white' }}>Game has ended! {this.state.history[this.state.round].gameState.points.player1score > this.state.history[this.state.round].gameState.points.player2score ? this.props.player1.props.name + " won!" : this.state.history[this.state.round].gameState.points.player1score === this.state.history[this.state.round].gameState.points.player2score ? "It is a draw!" : this.props.player2.props.name + "won!"}</h1> : null}
         <h1 style={{ color:'white' }}>{'passCount = ' + this.state.history[this.state.round].passCount}</h1>
         <h1 style={{ color:'white' }}>{""+this.props.player1.props.name+":" +this.state.history[this.state.round].gameState.points.player1score+", "+this.props.player2.props.name+": "+this.state.history[this.state.round].gameState.points.player2score}</h1>
         <Board
@@ -86,7 +86,7 @@ class Game extends Component {
   
   pass() {
     let nextPlayer = this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round].gameState, null, nextPlayer);
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round].gameState, this.state.history[this.state.round].gameState, nextPlayer);
     let newState = {
       history: this.state.history.slice(0, this.state.round + 1).concat([
         {
@@ -108,7 +108,8 @@ class Game extends Component {
     if(this.state.round <= steps - 1)
       return;
     let prevPlayer = steps % 2 == 1 && this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round - steps].gameState, null, prevPlayer);
+    let oldState = this.state.round - steps > 0 ? this.state.history[this.state.round - steps].gameState : this.state.history[0].gameState
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round - steps].gameState, oldState, prevPlayer);
     let newState = {
       history: this.state.history,
       round: this.state.round - steps,
@@ -126,7 +127,8 @@ class Game extends Component {
     if(this.state.round >= this.state.history.length - steps)
       return;
     let nextPlayer = steps % 2 == 1 && this.state.currPlayer === this.props.player1 ? this.props.player2 : this.props.player1;
-    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round + steps].gameState, null, nextPlayer);
+    let oldState = this.state.round + steps >= this.state.history.length ? this.state.history[this.state.round].gameState : this.state.history[this.state.round + steps].gameState;
+    let newMoves = this.updateAvailableMoves(this.state.history[this.state.round + steps].gameState, oldState, nextPlayer);
     let newState = {
       history: this.state.history,
       round: this.state.round + steps,
@@ -207,7 +209,7 @@ class Game extends Component {
       this.applyRulesBoard(newField, player);
       if(newField[offset] !== player) // suicidal move
         return; 
-      if(newField.equals(oldState)) // recurring moves
+      if(newField.equals(oldState.field)) // recurring moves
         return;
       let recursiveResult = this.emulateGame({field :newField, points: null}, newState, depth - 1, enemy); // recursively emulate child game states
       let bestPoints = Number.MIN_VALUE; 
@@ -456,8 +458,8 @@ class Field extends Component {
           onClick={this.props.updateBoard}
           x={(this.props.x + 0.125) * this.props.fieldSize}
           y={(this.props.y + 0.125) * this.props.fieldSize}
-          width={this.props.fieldSize * 0.75}
-          height={this.props.fieldSize * 0.75}
+          width={this.props.fieldSize * 0.85}
+          height={this.props.fieldSize * 0.85}
         />
       </Group>
     );
