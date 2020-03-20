@@ -73,7 +73,7 @@ router.post('/users/forgotpassword', async (req, res) => {
   user.resettime = new Date(Date.now());
   user.reset = true;
   await user.save();
-  var token = jwt.sign({email: user.email}, user.resettime.toISOString(), {expiresIn: '24h'});
+  var token = jwt.sign({email: user.email}, user.resettime.toISOString() + user.memberSince.toISOString(), {expiresIn: '24h'});
   gapi.sendResetEmail(user.email, user.username, token);
   res.send("SUCCESS");
 })
@@ -83,7 +83,7 @@ router.get('/users/resetpassword', async (req, res) => {
   var decoded = jwt.decode(req.query.token);
   const user = await User.findByLoginID(decoded.email);
   try {
-    jwt.verify(req.query.token, user.resettime.toISOString());
+    jwt.verify(req.query.token, user.resettime.toISOString() + user.memberSince.toISOString());
     await user.save();
     res.status(201).send({username: user.username});
   } catch(err) {
@@ -110,7 +110,7 @@ router.patch('/users/resetpassword', async (req, res) => {
     return;
   }
   try{
-    await jwt.verify(req.body.token, user.resettime.toISOString());
+    await jwt.verify(req.body.token, user.resettime.toISOString() + user.memberSince.toISOString());
   } catch(err) {
     res.status(400).send('TOKENERR');
     user.reset = false;
