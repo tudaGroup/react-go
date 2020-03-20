@@ -18,16 +18,19 @@ let socket;
 const Main = () => {
   const [username, setUsername] = useState(''); // Username of the user logged in
   const [userId, setUserId] = useState(''); // Id of user logged in
-  const [rating, setRating] = useState(''); // Rating of the user logged in
+  const [ownRating, setOwnRating] = useState(''); // Rating of the user logged in
   const [modalVisible, setModalVisible] = useState(false); // Visibility of the modal to create a game
   const [selectedBoardSize, setSelectedBoardSize] = useState(9); // 9x9, 13x13, 19x19
   const [selectedTime, setSelectedTime] = useState(1); // Time limit for each player between 5 - 40 min
   const [selectedIncrement, setSelectedIncrement] = useState(0); // Increment for each move between 0 - 40s
   const [selectedGameMode, setSelectedGameMode] = useState('casual'); // rated or casual games
   const [challenges, setChallenges] = useState([]); // Objects with name, id, rating, size, time, increment, mode
+  const [authToken, setAuthToken] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('jwt');
+    setAuthToken(token);
+
     // Redirect to login page if user is without token
     if (token === null) {
       history.push('/login');
@@ -42,7 +45,7 @@ const Main = () => {
       .then(res => {
         setUserId(res.data._id);
         setUsername(res.data.username);
-        setRating(res.data.ratings[res.data.ratings.length - 1].rating);
+        setOwnRating(res.data.ratings[res.data.ratings.length - 1].rating);
         socket = socketIOClient('http://localhost:8000');
         socket.on('challenges', data => {
           // Receive open challenges
@@ -79,7 +82,7 @@ const Main = () => {
     let challenge = {
       name: username,
       id: userId,
-      rating: rating,
+      rating: ownRating,
       size: selectedBoardSize,
       time: selectedTime,
       increment: selectedIncrement,
@@ -116,7 +119,7 @@ const Main = () => {
     setSelectedGameMode(e.target.value);
   };
 
-  const handleChallengeClick = (
+  const handleChallengeClick = async (
     name,
     id,
     rating,
@@ -139,6 +142,26 @@ const Main = () => {
         acceptedChallenge: userId,
         challenger: username
       });
+
+      // Save game to the database
+      await api.post(
+        '/games',
+        {
+          player1: name,
+          player2: username,
+          time: time,
+          timeIncrement: increment,
+          size: size,
+          rated: mode === 'rated',
+          oldRatingPlayer1: rating,
+          oldRatingPlayer2: ownRating
+        },
+        {
+          headers: {
+            Authorization: 'Bearer ' + authToken
+          }
+        }
+      );
 
       // Redirect to game page
       history.push(`/game/${id}-${userId}`);

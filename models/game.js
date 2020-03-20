@@ -5,6 +5,7 @@ const GameSchema = new mongoose.Schema({
   player2: String,
   time: Number,
   timeIncrement: Number,
+  size: Number,
   rated: Boolean,
   oldRatingPlayer1: Number,
   newRatingPlayer1: Number,
