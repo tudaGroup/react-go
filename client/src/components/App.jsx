@@ -2,11 +2,12 @@ import React from 'react';
 import Main from './Main';
 import Login from './Login';
 import Register from './Register';
-import PasswordReset from './PasswordReset';
+import PasswordResetRequest from './PasswordResetRequest';
 import history from '../history';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import Particles from 'react-particles-js';
 import './style.css';
+import ResetPassword from './ResetPassword';
 import { Game, Player } from './BoardComponents';
 
 const particlesOptions = {
@@ -30,10 +31,11 @@ const App = () => {
         params={particlesOptions}
       />
       <Switch>
+        <Route path='/resetpassword/:token' component={ResetPassword}/>
         <Route path='/register' component={Register} />
-        <Route path='/reset' component={PasswordReset} />
+        <Route path='/pwresetreq' component={PasswordResetRequest} />
         <Route path='/login' component={Login} />
-        <Route path='/' component={Main} />
+        <Route exact path='/' component={Main} />
       </Switch>
     {/* <Game boardSize={19} player1={<Player name={"Player 1"} playerColor={"#453f3f"}/>} player2={<Player name={"Player 2"} playerColor={"#f7f7f7"}/>}/>*/}
     </Router>

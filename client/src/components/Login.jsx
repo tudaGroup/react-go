@@ -63,7 +63,7 @@ const Login = () => {
         </Button>
         <div className='entry__links'>
           <Link to='/register'>Register</Link>
-          <Link to='/reset'>Password reset</Link>
+          <Link to='/pwresetreq'>Password reset</Link>
         </div>
       </Card>
     </div>
