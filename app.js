@@ -5,6 +5,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const userRouter = require('./routes/users');
+const gameRouter = require('./routes/games');
 require('dotenv').config();
 const { setChallenges, getChallenges } = require('./challenges');
 const app = express();
@@ -14,6 +15,7 @@ const io = socketIo(server);
 app.use(cors());
 app.use(bodyParser.json());
 app.use(userRouter);
+app.use(gameRouter);
 
 // Database connection
 mongoose.Promise = global.Promise;
@@ -37,7 +39,6 @@ io.on('connection', socket => {
   socket.on('disconnect', () => console.log('Client disconnected'));
 });
 
-// Listening for incoming connections
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {
   console.log('Running on port ' + PORT);

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const Game = require('../models/Game');
+const Game = require('../models/game');
 
 const userOneId = new mongoose.Types.ObjectId();
 const userOne = {
@@ -33,10 +33,11 @@ const userTwo = {
 
 const gameOneId = new mongoose.Types.ObjectId();
 const gameOne = {
+  _id: gameOneId,
   player1: 'Jess',
   player2: 'Mike',
   time: 20,
-  increment: 2,
+  timeIncrement: 2,
   rated: true,
   oldRatingPlayer1: 20,
   oldRatingPlayer2: 5
@@ -44,10 +45,11 @@ const gameOne = {
 
 const gameTwoId = new mongoose.Types.ObjectId();
 const gameTwo = {
+  _id: gameTwoId,
   player1: 'Mike',
   player2: 'Jess',
   time: 5,
-  increment: 1,
+  timeIncrement: 1,
   rated: false,
   oldRatingPlayer1: 22,
   oldRatingPlayer2: 10
