@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { Button, Card, Input } from 'antd';
 import api from '../api';
 import history from '../history';
-import { useParams } from 'react-router-dom';
 
 export default class ResetPassword extends Component {
   constructor() {
@@ -23,7 +22,9 @@ export default class ResetPassword extends Component {
   }
 
   
-
+  /**
+   * when component is mount, make a get request to get username
+   */
   async componentDidMount() {
     const {
       match: {
@@ -56,6 +57,7 @@ export default class ResetPassword extends Component {
     });
   }
 
+  
   updatePassword() {
     const {
       match: {

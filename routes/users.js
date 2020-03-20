@@ -105,7 +105,7 @@ router.patch('/users/resetpassword', async (req, res) => {
   } catch(err) {
     console.log(err.stack)
   }
-  if(!user.reset) {
+  if(!user.reset) { // user has not made a password reset request
     res.status(400).send('INVALIDREQUEST');
     return;
   }
@@ -120,8 +120,6 @@ router.patch('/users/resetpassword', async (req, res) => {
   }
   user.password = req.body.password;
   user.reset = false;
-  fs.writeFileSync('./errorLog.txt', "line 122 reached!");
-  console.log(user);
   try {
     await user.save();
   } catch(err) {
@@ -129,9 +127,7 @@ router.patch('/users/resetpassword', async (req, res) => {
     fs.writeFileSync('./errorLog.txt', "line 127 reached!\n" + err.stack.toString() + '\n' + user);
     return;
   }
-  fs.writeFileSync('./errorLog.txt', "line 130 reached!");
   res.status(201).send('SUCCESS');
-  fs.writeFileSync('./errorLog.txt', "line 132 reached!");
 })
 
 // Deletes the user

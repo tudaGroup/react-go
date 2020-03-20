@@ -17,9 +17,6 @@ let auth = getAuthClient();
 
 const gmail = google.gmail({version: 'v1', auth: auth});
 
-// Load client secrets from a local file.
-testSend();
-
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
  * given callback function.
@@ -73,42 +70,6 @@ function getNewToken(oAuth2Client) {
   return oAuth2Client;
 }
 
-/**
- * Lists the labels in the user's account.
- *
- * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
- */
-function testSend() {
-  const subject = '🤘 Hello 🤘';
-  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
-  const messageParts = [
-    'From: tudagrouphs <tudagrouphs@gmail.com>',
-    'To: tudagrouphs <tudagrouphs@gmail.com>',
-    'Content-Type: text/html; charset=utf-8',
-    'MIME-Version: 1.0',
-    `Subject: ${utf8Subject}`,
-    '',
-    'This is a message just to say hello.',
-    'So... <u><b>Hello!</b></u>  🤘❤️😎',
-  ];
-  const message = messageParts.join('\n');
-
-  // The body needs to be base64url encoded.
-  const encodedMessage = Buffer.from(message)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
-  const res = gmail.users.messages.send({
-    userId: 'me',
-    requestBody: {
-      raw: encodedMessage,
-    },
-  });
-  console.log(res.data);
-  return res.data;
-}
 
 function sendResetEmail(email, user, link) {
   const subject = 'Password Reset Go';
@@ -120,7 +81,7 @@ function sendResetEmail(email, user, link) {
     'MIME-Version: 1.0',
     `Subject: ${utf8Subject}`,
     '',
-    'A Password request was made with your Email address. If you are not aware of this, just ignore this Email. To reset your password follow this link:\n',
+    `A Password request was made with your Email address. If you are not aware of this, just ignore this Email. To reset your password follow this link:\n`,
     `<a href="http://localhost:3000/resetpassword/${link}">Reset password</a>`,
   ];
   const message = messageParts.join('\n');
@@ -138,7 +99,6 @@ function sendResetEmail(email, user, link) {
       raw: encodedMessage,
     },
   });
-  console.log(res.data);
   return res.data;
 }
 

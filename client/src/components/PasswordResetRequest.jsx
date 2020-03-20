@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Card, Input } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
+import history from '../history';
 import api from '../api';
 
 const PasswordResetRequest = () => {
@@ -31,6 +32,11 @@ const PasswordResetRequest = () => {
       console.log(err);
     })
   };
+
+  const returnToLogin = () => {
+    history.push('/login');
+    window.location.reload();
+  }
 
   const handleKeyPress = event => {
     if(event.key === 'Enter') {
@@ -68,6 +74,13 @@ const PasswordResetRequest = () => {
         <Card>
           <h1 className='entry__title'>Success!</h1>
           <p className='entry__message'>Email has been sent!</p>
+          <Button
+            type='primary'
+            className='entry__button'
+            onClick={returnToLogin()}
+          >
+            <CheckOutlined /> Return to login screen
+          </Button>
         </Card>
       </div>
     );
