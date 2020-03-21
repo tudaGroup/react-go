@@ -60,6 +60,7 @@ h6 {
   background-color: #262320;
   width: 50%;
   height: 60%;
+  overflow: scroll;
 }
 
 .challenge__items {
