@@ -14,7 +14,6 @@ const Main = () => {
     // Redirect to login page if user is without token
     if (token === null) {
       history.push('/login');
-      window.location.reload();
     }
 
     // Make a request for profile information

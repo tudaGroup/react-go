@@ -15,7 +15,6 @@ const Login = () => {
       .then(res => {
         localStorage.setItem('jwt', res.data.token);
         history.push('/');
-        window.location.reload();
       })
       .catch(error => {
         createErrorMessage('Username or password is invalid.');
