@@ -12,8 +12,7 @@ const GameSchema = new mongoose.Schema({
   oldRatingPlayer2: Number,
   newRatingPlayer2: Number,
   timestamp: {
-    type: Date,
-    default: new Date()
+    type: Date
   },
   player1Won: Boolean
 });

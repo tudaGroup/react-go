@@ -198,6 +198,34 @@ test('Returns the games between two players', async () => {
   );
 });
 
+test('Gets the active game between two players', async () => {
+  const response = await request(app)
+    .get('/games/active?player1=Mike&player2=Jess')
+    .set('Authorization', `Bearer ${userOne.token}`)
+    .send()
+    .expect(200);
+
+  expect(response.body.player1).toEqual('Jess');
+  expect(response.body.player2).toEqual('Mike');
+  expect(response.body.time).toEqual(20);
+  expect(response.body.timeIncrement).toEqual(2);
+  expect(response.body.rated).toEqual(true);
+  expect(response.body.oldRatingPlayer1).toEqual(20);
+  expect(response.body.oldRatingPlayer2).toEqual(5);
+  expect(response.body.newRatingPlayer1).toEqual(undefined);
+  expect(response.body.newRatingPlayer2).toEqual(undefined);
+  expect(response.body.player1Won).toEqual(undefined);
+});
+
+test('Returns nothing if there is no active game', async () => {
+  await Game.findByIdAndDelete(gameOneId);
+  const response = await request(app)
+    .get('/games/active?player1=Mike&player2=Jess')
+    .set('Authorization', `Bearer ${userOne.token}`)
+    .send()
+    .expect(204);
+});
+
 test('Updates rating changes and winner', async () => {
   const response = await request(app)
     .patch(`/games/${gameOneId}`)

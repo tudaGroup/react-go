@@ -52,7 +52,10 @@ const gameTwo = {
   timeIncrement: 1,
   rated: false,
   oldRatingPlayer1: 22,
-  oldRatingPlayer2: 10
+  oldRatingPlayer2: 10,
+  newRatingPlayer1: 22,
+  newRatingPlayer2: 10,
+  player1Won: false
 };
 
 const setupDatabase = async () => {

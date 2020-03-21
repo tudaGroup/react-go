@@ -15,15 +15,6 @@ router.post('/games', auth, async (req, res) => {
   }
 });
 
-// Return all games of a given player
-router.get('/games/:player', auth, async (req, res) => {
-  let player = req.params.player;
-  let games = await Game.find({
-    $or: [{ player1: player }, { player2: player }]
-  }).sort({ timestamp: 'desc' });
-  res.send(games);
-});
-
 // Return the games between two players
 router.get('/games', auth, async (req, res) => {
   let player1 = req.query.player1;
@@ -34,7 +25,35 @@ router.get('/games', auth, async (req, res) => {
       { $and: [{ player1: player1 }, { player2: player2 }] },
       { $and: [{ player1: player2 }, { player2: player1 }] }
     ]
-  }).sort({ timestamp: 'desc' });
+  }).sort({ _id: -1 });
+  res.send(games);
+});
+
+// Return the active game between two players
+router.get('/games/active', auth, async (req, res) => {
+  let player1 = req.query.player1;
+  let player2 = req.query.player2;
+  let games = await await Game.find({
+    $or: [
+      { $and: [{ player1: player1 }, { player2: player2 }] },
+      { $and: [{ player1: player2 }, { player2: player1 }] }
+    ]
+  }).sort({ _id: -1 });
+  let mostRecentGame = games[0];
+
+  if (mostRecentGame.player1Won === undefined) {
+    res.send(mostRecentGame); // game is not finished yet
+  } else {
+    res.status(204).send(); // no active game
+  }
+});
+
+// Return all games of a given player
+router.get('/games/:player', auth, async (req, res) => {
+  let player = req.params.player;
+  let games = await Game.find({
+    $or: [{ player1: player }, { player2: player }]
+  }).sort({ _id: -1 });
   res.send(games);
 });
 

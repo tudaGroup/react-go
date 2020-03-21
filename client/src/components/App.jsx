@@ -33,7 +33,7 @@ const App = () => {
         <Route path='/register' component={Register} />
         <Route path='/reset' component={PasswordReset} />
         <Route path='/login' component={Login} />
-        <Route path='/game/:id' component={GameWindow} />
+        <Route path='/game' component={GameWindow} />
         <Route path='/' component={Main} />
       </Switch>
     </Router>

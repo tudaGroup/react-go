@@ -21,7 +21,7 @@ const Main = () => {
   const [ownRating, setOwnRating] = useState(''); // Rating of the user logged in
   const [modalVisible, setModalVisible] = useState(false); // Visibility of the modal to create a game
   const [selectedBoardSize, setSelectedBoardSize] = useState(9); // 9x9, 13x13, 19x19
-  const [selectedTime, setSelectedTime] = useState(1); // Time limit for each player between 5 - 40 min
+  const [selectedTime, setSelectedTime] = useState(5); // Time limit for each player between 5 - 40 min
   const [selectedIncrement, setSelectedIncrement] = useState(0); // Increment for each move between 0 - 40s
   const [selectedGameMode, setSelectedGameMode] = useState('casual'); // rated or casual games
   const [challenges, setChallenges] = useState([]); // Objects with name, id, rating, size, time, increment, mode
@@ -54,13 +54,13 @@ const Main = () => {
         // Get Notified that challenge got accepted
         socket.on('acceptChallenge', data => {
           // If the accepted challenge was the current user's challenge
-          if (data.createdChallenge === res.data._id) {
-            alert(data.challenger + ' has accepted your challenge!');
+          if (data.createdChallenge === res.data.username) {
+            alert(data.acceptedChallenge + ' has accepted your challenge!');
           }
 
           // Redirect to game page
           history.push(
-            `/game/${data.createdChallenge}-${data.acceptedChallenge}`
+            `/game?player1=${data.createdChallenge}&player2=${data.acceptedChallenge}`
           );
         });
       });
@@ -138,9 +138,8 @@ const Main = () => {
     // If clicked by a user who did not create the challenge
     if (username !== name) {
       socket.emit('acceptChallenge', {
-        createdChallenge: id,
-        acceptedChallenge: userId,
-        challenger: username
+        createdChallenge: name,
+        acceptedChallenge: username
       });
 
       // Save game to the database
@@ -154,7 +153,8 @@ const Main = () => {
           size: size,
           rated: mode === 'rated',
           oldRatingPlayer1: rating,
-          oldRatingPlayer2: ownRating
+          oldRatingPlayer2: ownRating,
+          timestamp: new Date()
         },
         {
           headers: {
@@ -164,7 +164,7 @@ const Main = () => {
       );
 
       // Redirect to game page
-      history.push(`/game/${id}-${userId}`);
+      history.push(`/game?player1=${name}&player2=${username}`);
     }
   };
 
