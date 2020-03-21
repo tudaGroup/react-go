@@ -28,14 +28,25 @@ mongoose.connect('mongodb://localhost/go', {
 io.on('connection', socket => {
   console.log('New client connected');
   socket.emit('challenges', getChallenges()); // Send challenges to new client
+
   socket.on('updateChallenges', data => {
     // Update list of challenges when a new one is created
     setChallenges(data);
     io.emit('challenges', getChallenges()); // Broadcast updated list of challenges
   });
+
   socket.on('acceptChallenge', data => {
     socket.broadcast.emit('acceptChallenge', data);
   });
+
+  socket.on('joinGame', room => {
+    socket.join(room);
+  });
+
+  socket.on('game', data => {
+    io.to(data.room).emit('game', data.message);
+  });
+
   socket.on('disconnect', () => console.log('Client disconnected'));
 });
 

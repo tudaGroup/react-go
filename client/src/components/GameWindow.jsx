@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import jwt_decode from 'jwt-decode';
 import history from '../history';
 import api from '../api';
+import socketIOClient from 'socket.io-client';
+
+let socket;
 
 const GameWindow = () => {
   const [authToken, setAuthToken] = useState('');
@@ -13,6 +16,7 @@ const GameWindow = () => {
   const [rated, setRated] = useState(false);
   const [oldRatingPlayer1, setOldRatingPlayer1] = useState(0);
   const [oldRatingPlayer2, setOldRatingPlayer2] = useState(0);
+  const [roomName, setRoomName] = useState('');
 
   useEffect(() => {
     async function getActiveGame(player1, player2, token) {
@@ -39,7 +43,6 @@ const GameWindow = () => {
       setRated(response.data.rated);
       setOldRatingPlayer1(response.data.oldRatingPlayer1);
       setOldRatingPlayer2(response.data.oldRatingPlayer2);
-      console.log(response.data);
     }
 
     const token = localStorage.getItem('jwt');
@@ -62,7 +65,22 @@ const GameWindow = () => {
     let player2 = urlParams.get('player2');
 
     getActiveGame(player1, player2, token);
+
+    // Set up communication between the two players exclusively
+    const room = `${player1}-${player2}`;
+    setRoomName(room);
+    socket = socketIOClient('http://localhost:8000');
+    socket.emit('joinGame', room);
+
+    // Sample game event
+    socket.on('game', data => {
+      console.log('Game Message!');
+    });
   }, []);
+
+  const testCommunication = () => {
+    socket.emit('game', { message: 'game message', room: roomName });
+  };
 
   return (
     <div className='main'>
@@ -75,6 +93,7 @@ const GameWindow = () => {
       <div>Mode: {rated ? 'rated' : 'casual'}</div>
       <div>Old Rating Player 1: {oldRatingPlayer1}</div>
       <div>Old Rating Player 2: {oldRatingPlayer2}</div>
+      <button onClick={testCommunication}>Communicate!</button>
     </div>
   );
 };
