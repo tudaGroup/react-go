@@ -67,6 +67,15 @@ const Main = () => {
   }, []);
 
   const handleLogout = () => {
+    // Delete all open challenges
+    let filteredChallenges = challenges.filter(
+      challenge => challenge.name !== username
+    );
+
+    // Send new challenge to server
+    setChallenges(filteredChallenges);
+    socket.emit('updateChallenges', filteredChallenges);
+
     // Delete token in local storage and redirect to login
     localStorage.removeItem('jwt');
     history.push('/login');
