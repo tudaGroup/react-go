@@ -15,7 +15,6 @@ const Login = () => {
       .then(res => {
         localStorage.setItem('jwt', res.data.token);
         history.push('/');
-        window.location.reload();
       })
       .catch(error => {
         createErrorMessage('Username or password is invalid.');
@@ -62,12 +61,8 @@ const Login = () => {
           Sign in
         </Button>
         <div className='entry__links'>
-          <Link className='entry__links' to='/register'>
-            Register
-          </Link>
-          <Link className='entry__links' to='/reset'>
-            Password reset
-          </Link>
+          <Link className='entry__links' to='/register'>Register</Link>
+          <Link className='entry__links' to='/pwresetreq'>Password reset</Link>
         </div>
       </Card>
     </div>

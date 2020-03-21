@@ -22,6 +22,8 @@ const UserSchema = new mongoose.Schema({
     minlength: 7,
     trim: true
   },
+  reset: {type: Boolean, default: false},
+  resettime: Date,
   token: String,
   ratings: {
     type: [
@@ -83,6 +85,15 @@ UserSchema.statics.findByCredentials = async (name, password) => {
 
   return user;
 };
+
+
+
+//
+UserSchema.statics.findByLoginID = async (id) => {
+  return await User.findOne({$or: [{email: id}, {username: id}]});
+}
+
+
 
 // Hash the plain text password before saving
 UserSchema.pre('save', async function(next) {

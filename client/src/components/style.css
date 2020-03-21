@@ -30,6 +30,10 @@ h6 {
   color: red;
 }
 
+.entry__message {
+  color: black;
+}
+
 .entry__input {
   margin: 20px 0;
 }
