@@ -2,6 +2,8 @@ import React from 'react';
 import Main from './Main';
 import Login from './Login';
 import Register from './Register';
+import PasswordReset from './PasswordReset';
+import GameWindow from './GameWindow';
 import PasswordResetRequest from './PasswordResetRequest';
 import history from '../history';
 import { Router, Switch, Route } from 'react-router-dom';
@@ -34,9 +36,9 @@ const App = () => {
         <Route path='/register' component={Register} />
         <Route path='/pwresetreq' component={PasswordResetRequest} />
         <Route path='/login' component={Login} />
+        <Route path='/game' component={GameWindow} />
         <Route exact path='/' component={Main} />
       </Switch>
-      {/* <Game boardSize={19} player1={<Player name={"Player 1"} playerColor={"#453f3f"}/>} player2={<Player name={"Player 2"} playerColor={"#f7f7f7"}/>}/>*/}
     </Router>
   );
 };
