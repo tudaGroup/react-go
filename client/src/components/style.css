@@ -100,6 +100,7 @@ h6 {
 .menu__item {
   padding: 15px 30px;
   cursor: pointer;
+  color: #bababa;
 }
 
 .menu__item:hover {

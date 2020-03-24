@@ -12,6 +12,7 @@ import {
   UpCircleOutlined,
   UserOutlined
 } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 
 let socket;
 
@@ -184,9 +185,11 @@ const Main = () => {
   return (
     <div className='main'>
       <div id='menu'>
-        <span className='menu__item'>
-          <UserOutlined /> {username}
-        </span>
+        <Link to={{ pathname: `/profile/${userId}` }}>
+          <span className='menu__item'>
+            <UserOutlined /> {username}
+          </span>
+        </Link>
         <span className='menu__item'>
           <SettingOutlined /> Preferences
         </span>
