@@ -13,6 +13,7 @@ class Game extends Component {
    */
   constructor(props) {
     super(props);
+    console.log(props);
     var initState = {
       field: new Array(this.props.boardSize * this.props.boardSize).fill(null),
       points: { player1score: 0, player2score: 0 }

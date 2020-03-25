@@ -3,6 +3,7 @@ import jwt_decode from 'jwt-decode';
 import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
+import { Game, Player } from './BoardComponents';
 
 let socket;
 
@@ -17,6 +18,7 @@ const GameWindow = () => {
   const [oldRatingPlayer1, setOldRatingPlayer1] = useState(0);
   const [oldRatingPlayer2, setOldRatingPlayer2] = useState(0);
   const [roomName, setRoomName] = useState('');
+  const [game, setGame] = useState(false);
 
   useEffect(() => {
     async function getActiveGame(player1, player2, token) {
@@ -43,6 +45,7 @@ const GameWindow = () => {
       setRated(response.data.rated);
       setOldRatingPlayer1(response.data.oldRatingPlayer1);
       setOldRatingPlayer2(response.data.oldRatingPlayer2);
+      setGame(<Game boardSize={response.data.size} player1={<Player name={response.data.player1} playerColor={'#383b40'}/>} player2={<Player name={response.data.player2} playerColor={'#f5f9ff'}/>}/>)
     }
 
     const token = localStorage.getItem('jwt');
@@ -94,6 +97,7 @@ const GameWindow = () => {
       <div>Old Rating Player 1: {oldRatingPlayer1}</div>
       <div>Old Rating Player 2: {oldRatingPlayer2}</div>
       <button onClick={testCommunication}>Communicate!</button>
+      {game}
     </div>
   );
 };
