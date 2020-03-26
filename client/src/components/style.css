@@ -107,3 +107,55 @@ h6 {
   background-color: #2f2d29;
   color: white;
 }
+
+.profile {
+  margin: 50px;
+  padding: 30px;
+  background-color: #262320;
+}
+
+.profile__username {
+  font-size: 2.5vw;
+  margin-bottom: 20px;
+}
+
+.profile__graph {
+  background-color: #302d2b;
+  width: 50%;
+}
+
+.profile__info {
+  padding: 20px;
+  text-align: center;
+}
+
+.profile__biography {
+  margin: 20px;
+  padding: 15px;
+  font-size: 1.2vw;
+  border-top: 1px solid;
+}
+
+.profile__gamelist {
+  margin: 0 auto;
+}
+
+.profile__game {
+  background-color: #302d2b;
+  font-size: 1.2vw;
+  margin-top: 15px;
+  margin-left: 25%;
+  padding: 15px;
+  border-radius: 15px;
+  width: 50%;
+}
+
+.profile__game:hover {
+  background-color: #433f3c;
+}
+
+.profile__count {
+  margin: 40px;
+  padding: 5px;
+  background-color: rgba(64, 169, 255, 0.7);
+}
