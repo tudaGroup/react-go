@@ -55,7 +55,7 @@ const GameWindow = () => {
       let un = localStorage.getItem('username');
       setUsername(un);
       let ownPlayer = p1.props.name === un ? p1 : p2;
-      setGame(<Game ref={(game) => g = game} boardSize={response.data.size} player1={p1} player2={p2} ownPlayer={ownPlayer} broadcast={broadcastMove} multi={true}/>;);
+      setGame(<Game ref={(game) => g = game} boardSize={response.data.size} player1={p1} player2={p2} ownPlayer={ownPlayer} broadcast={broadcastMove} multi={true}/>);
       
     }
 
