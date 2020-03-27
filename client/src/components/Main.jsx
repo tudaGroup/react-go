@@ -190,9 +190,11 @@ const Main = () => {
             <UserOutlined /> {username}
           </span>
         </Link>
-        <span className='menu__item'>
-          <SettingOutlined /> Preferences
-        </span>
+        <Link to='/settings'>
+          <span className='menu__item'>
+            <SettingOutlined /> Settings
+          </span>
+        </Link>
         <span className='menu__item' onClick={handleLogout}>
           <PoweroffOutlined /> Sign out
         </span>
