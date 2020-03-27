@@ -24,10 +24,16 @@ mongoose.connect('mongodb://localhost/go', {
   useUnifiedTopology: true
 });
 
+var onlinePlayers = [];
+
 // Socket.IO
 io.on('connection', socket => {
   console.log('New client connected');
+  var username;
   socket.emit('challenges', getChallenges()); // Send challenges to new client
+
+  // sets username for socket connection(later to be used for deleting all challenges from this user)
+  socket.on('online', name => {username = name; console.log(username + ' online')});
 
   socket.on('updateChallenges', data => {
     // Update list of challenges when a new one is created
@@ -47,7 +53,27 @@ io.on('connection', socket => {
     io.to(data.room).emit('game', data.message);
   });
 
-  socket.on('disconnect', () => console.log('Client disconnected'));
+  socket.on('disconnect', () => {
+    console.log(username  + ' logged out');
+    let filteredChallenges = getChallenges().filter(
+      challenge => challenge.name !== username
+    );
+    
+    setChallenges(filteredChallenges);
+    console.log(filteredChallenges);
+    console.log(getChallenges());
+    io.emit('challenges', getChallenges());
+    socket.disconnect();
+  });
+
+  socket.on('logout', () => {
+    let filteredChallenges = getChallenges().filter(
+      challenge => challenge.name !== username
+    );
+    setChallenges(filteredChallenges);
+    io.emit('challenges', getChallenges());
+    socket.disconnect();
+  });
 });
 
 const PORT = process.env.PORT || 8000;

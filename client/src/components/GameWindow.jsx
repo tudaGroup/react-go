@@ -6,6 +6,8 @@ import socketIOClient from 'socket.io-client';
 import { Game, Player } from './BoardComponents';
 
 let socket;
+let g = null;
+let rn = '';
 
 const GameWindow = () => {
   const [authToken, setAuthToken] = useState('');
@@ -18,7 +20,8 @@ const GameWindow = () => {
   const [oldRatingPlayer1, setOldRatingPlayer1] = useState(0);
   const [oldRatingPlayer2, setOldRatingPlayer2] = useState(0);
   const [roomName, setRoomName] = useState('');
-  const [game, setGame] = useState(false);
+  const [game, setGame] = useState(null);
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     async function getActiveGame(player1, player2, token) {
@@ -45,8 +48,20 @@ const GameWindow = () => {
       setRated(response.data.rated);
       setOldRatingPlayer1(response.data.oldRatingPlayer1);
       setOldRatingPlayer2(response.data.oldRatingPlayer2);
-      setGame(<Game boardSize={response.data.size} player1={<Player name={response.data.player1} playerColor={'#383b40'}/>} player2={<Player name={response.data.player2} playerColor={'#f5f9ff'}/>}/>)
+      
+      
+      p1 = <Player name={response.data.player1} playerColor={'#383b40'}/>;
+      p2 = <Player name={response.data.player2} playerColor={'#f5f9ff'}/>;
+      let un = localStorage.getItem('username');
+      setUsername(un);
+      let ownPlayer = p1.props.name === un ? p1 : p2;
+      g = <Game ref={(game) => g = game} boardSize={response.data.size} player1={p1} player2={p2} ownPlayer={ownPlayer} broadcast={broadcastMove} multi={true}/>;
+      setGame(g);
+      
     }
+
+    var p1;
+    var p2;
 
     const token = localStorage.getItem('jwt');
     setAuthToken(token);
@@ -67,23 +82,44 @@ const GameWindow = () => {
     let player1 = urlParams.get('player1');
     let player2 = urlParams.get('player2');
 
-    getActiveGame(player1, player2, token);
-
     // Set up communication between the two players exclusively
     const room = `${player1}-${player2}`;
+    rn = room;
     setRoomName(room);
     socket = socketIOClient('http://localhost:8000');
     socket.emit('joinGame', room);
 
+    getActiveGame(player1, player2, token);
+   
+
     // Sample game event
     socket.on('game', data => {
-      console.log('Game Message!');
+      console.log('received');
+      console.log(data);
+      console.log(g);
+      if(data.type === 'move')
+        g.processInput(data.x, data.y);
     });
   }, []);
+
+  const broadcastMove = (x, y) => {
+    console.log('sending');
+    let data = { message: { type: 'move', x: x, y: y }, room: rn };
+    console.log(data)
+    console.log(socket);
+    socket.emit('game', data);
+  };
+
+  const pass = () => {
+    socket.emit('pass');
+  };
+
+  
 
   const testCommunication = () => {
     socket.emit('game', { message: 'game message', room: roomName });
   };
+ 
 
   return (
     <div className='main'>
@@ -96,7 +132,7 @@ const GameWindow = () => {
       <div>Mode: {rated ? 'rated' : 'casual'}</div>
       <div>Old Rating Player 1: {oldRatingPlayer1}</div>
       <div>Old Rating Player 2: {oldRatingPlayer2}</div>
-      <button onClick={testCommunication}>Communicate!</button>
+      <button onClick={() => broadcastMove(1, 1)}>Communicate!</button>
       {game}
     </div>
   );

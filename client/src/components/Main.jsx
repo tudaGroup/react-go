@@ -46,7 +46,13 @@ const Main = () => {
         setUserId(res.data._id);
         setUsername(res.data.username);
         setOwnRating(res.data.ratings[res.data.ratings.length - 1].rating);
+
+
+        localStorage.setItem('username', res.data.username);
         socket = socketIOClient('http://localhost:8000');
+
+        // submit username to server
+        socket.emit('online', res.data.username);
         socket.on('challenges', data => {
           // Receive open challenges
           setChallenges(data);
@@ -68,16 +74,11 @@ const Main = () => {
 
   const handleLogout = () => {
     // Delete all open challenges
-    let filteredChallenges = challenges.filter(
-      challenge => challenge.name !== username
-    );
-
-    // Send new challenge to server
-    setChallenges(filteredChallenges);
-    socket.emit('updateChallenges', filteredChallenges);
+    socket.emit('logout');
 
     // Delete token in local storage and redirect to login
     localStorage.removeItem('jwt');
+    localStorage.removeItem('username');
     history.push('/login');
   };
 
