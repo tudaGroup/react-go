@@ -5,9 +5,31 @@ import api from '../api';
 import socketIOClient from 'socket.io-client';
 import { Game, Player } from './BoardComponents';
 
+
+const msgType = {
+  MOVE:         'MOVE',
+  MOVE_ACK:     'MOVE_ACK',
+  MOVE_ACK_ACK: 'MOVE_ACK_ACK',
+  PASS:         'PASS',
+  PASS_ACK:     'PASS_ACK',
+  PASS_ACK_ACK: 'PASS_ACK_ACK',
+  ERR:          'ERR',
+  NULL:         'NULL'
+}
+
+const commState = {
+  NONE:                 'NONE',
+  WAITING_MOVE_ACK:     'WAITING_MOVE_ACK',
+  WAITING_MOVE_ACK_ACK: 'WAITING_MOVE_ACK_ACK',
+  WAITING_PASS_ACK:     'WAITING_PASS_ACK',
+  WAITING_PASS_ACK_ACK: 'WAITING_PASS_ACK_ACK'
+}
+
 let socket;
 let g = null;
 let rn = '';
+let prevData = {x: NaN, y: NaN};
+let currentState = commState.NONE;
 
 const GameWindow = () => {
   const [authToken, setAuthToken] = useState('');
@@ -55,7 +77,8 @@ const GameWindow = () => {
       let un = localStorage.getItem('username');
       setUsername(un);
       let ownPlayer = p1.props.name === un ? p1 : p2;
-      setGame(<Game ref={(game) => g = game} boardSize={response.data.size} player1={p1} player2={p2} ownPlayer={ownPlayer} broadcast={broadcastMove} multi={true}/>);
+      g = <Game ref={(game) => g = game} boardSize={response.data.size} player1={p1} player2={p2} ownPlayer={ownPlayer} broadcast={broadcastMove} pass={pass} multi={true}/>
+      setGame(g);
       
     }
 
@@ -92,32 +115,86 @@ const GameWindow = () => {
    
 
     // Sample game event
-    socket.on('game', data => {
+    socket.on('game', msg => {
       console.log('received');
-      console.log(data);
+      console.log(msg);
       console.log(g);
-      if(data.type === 'move')
-        g.processInput(data.x, data.y);
+      if (msg.type === msgType.ERR) {
+        console.log(msg);
+        throw Error(msg.errmsg);
+      }
+      let response = null;
+      switch (currentState) {
+        case commState.NONE:
+          if (msg.type === msgType.MOVE) {
+            prevData = { x: msg.x, y: msg.y };
+            response = { message: { type: msgType.MOVE_ACK, ...prevData}, room: rn };
+            currentState = commState.WAITING_MOVE_ACK_ACK;
+          } else if ( msg.type === msgType.PASS ) {
+            response = { message: { type: msgType.PASS_ACK }, room: rn };
+            currentState = commState.WAITING_PASS_ACK_ACK;
+          }
+          break;
+        case commState.WAITING_MOVE_ACK:
+          if (msg.type === msgType.MOVE_ACK) {
+            if (prevData.x === msg.x && prevData.y === msg.y) {
+              response = { message: { type: msgType.MOVE_ACK_ACK, ...prevData }, room: rn };
+              currentState = commState.NONE;
+              g.processInput(msg.x, msg.y);
+            } else {
+              let errmsg = 'Error occured during MOVE_ACK: expected ' + prevData.toString() + ' but received ' + { x: msg.x, y: msg.y }.toString();
+              response = { message: { type: msgType.ERR, errmsg:  errmsg}, room: rn };
+              currentState = commState.NONE;
+            }
+          }
+          break;
+        case commState.WAITING_MOVE_ACK_ACK:
+          if (msg.type === msgType.MOVE_ACK_ACK) {
+            if (prevData.x === msg.x && prevData.y === msg.y) {
+              g.processInput(msg.x, msg.y);
+              currentState = commState.NONE;
+            } else {
+              let errmsg = 'Error occured during MOVE_ACK_ACK: expected ' + prevData.toString() + ' but received ' + { x: msg.x, y: msg.y }.toString();
+              response = { message: { type: msgType.ERR, errmsg:  errmsg}, room: rn };
+              currentState = commState.NONE;
+            }
+          }
+          break;
+        case commState.WAITING_PASS_ACK:
+          if(msg.type === msgType.PASS_ACK) {
+            response = { message: { type: msgType.PASS_ACK_ACK }, room :rn };
+            currentState = commState.NONE;
+            g.pass();
+          }
+          break;
+        case commState.WAITING_PASS_ACK_ACK:
+          if(msg.type === msgType.PASS_ACK_ACK) {
+            currentState = commState.NONE;
+            g.pass();
+          }
+      }
+      console.log('response:');
+      console.log(response);
+      if(response !== null)
+        socket.emit('game', response);
     });
   }, []);
 
   const broadcastMove = (x, y) => {
     console.log('sending');
-    let data = { message: { type: 'move', x: x, y: y }, room: rn };
+    let data = { message: { type: msgType.MOVE, x: x, y: y }, room: rn };
     console.log(data)
     console.log(socket);
+    currentState = commState.WAITING_MOVE_ACK;
+    prevData = { x: x, y: y };
     socket.emit('game', data);
   };
 
   const pass = () => {
-    socket.emit('pass');
+    currentState = commState.WAITING_PASS_ACK;
+    socket.emit('game', {message: { type: msgType.PASS }, room: rn });
   };
 
-  
-
-  const testCommunication = () => {
-    socket.emit('game', { message: 'game message', room: roomName });
-  };
  
 
   return (
@@ -131,7 +208,6 @@ const GameWindow = () => {
       <div>Mode: {rated ? 'rated' : 'casual'}</div>
       <div>Old Rating Player 1: {oldRatingPlayer1}</div>
       <div>Old Rating Player 2: {oldRatingPlayer2}</div>
-      <button onClick={() => broadcastMove(1, 1)}>Communicate!</button>
       {game}
     </div>
   );

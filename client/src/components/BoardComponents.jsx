@@ -55,9 +55,9 @@ class Game extends Component {
     );
     return (
       <div>
-        <button onClick={() => this.undo(1)}>{'Undo'}</button>
-        <button onClick={() => this.redo(1)}>{'Redo'}</button>
-        <button onClick={() => this.pass()}>{'Pass'}</button>
+        {/*<button onClick={() => this.undo(1)}>{'Undo'}</button>*/null}
+        {/*<button onClick={() => this.redo(1)}>{'Redo'}</button>*/null}
+        <button onClick={() => this.handlePass()}>{'Pass'}</button>
         {this.state.gameEnd ? (
           <h1 style={{ color: 'white' }}>
             Game has ended!{' '}
@@ -125,6 +125,11 @@ class Game extends Component {
     if ((this.props.multi && this.props.ownPlayer !== this.state.currPlayer) || this.state.gameEnd)
       return;
     this.props.broadcast(x, y);
+  }
+
+  handlePass() {
+    console.log('pass init')
+    this.props.pass();
   }
 
 
