@@ -31,6 +31,10 @@ let rn = '';
 let prevData = {x: NaN, y: NaN};
 let currentState = commState.NONE;
 
+/**
+ * all messages in the room have the structur { message: data of to be sent message, room: room number }
+ */
+
 const GameWindow = () => {
   const [authToken, setAuthToken] = useState('');
   const [player1, setPlayer1] = useState('');
@@ -116,16 +120,13 @@ const GameWindow = () => {
 
     // Sample game event
     socket.on('game', msg => {
-      console.log('received');
-      console.log(msg);
-      console.log(g);
-      if (msg.type === msgType.ERR) {
+      if (msg.type === msgType.ERR) { // received an error, exit program
         console.log(msg);
         throw Error(msg.errmsg);
       }
       let response = null;
       switch (currentState) {
-        case commState.NONE:
+        case commState.NONE: // the current player has made no move nor passed
           if (msg.type === msgType.MOVE) {
             prevData = { x: msg.x, y: msg.y };
             response = { message: { type: msgType.MOVE_ACK, ...prevData}, room: rn };
@@ -135,7 +136,7 @@ const GameWindow = () => {
             currentState = commState.WAITING_PASS_ACK_ACK;
           }
           break;
-        case commState.WAITING_MOVE_ACK:
+        case commState.WAITING_MOVE_ACK: // player has sent a MOVE msg and waits for acknowledgement
           if (msg.type === msgType.MOVE_ACK) {
             if (prevData.x === msg.x && prevData.y === msg.y) {
               response = { message: { type: msgType.MOVE_ACK_ACK, ...prevData }, room: rn };
@@ -148,7 +149,7 @@ const GameWindow = () => {
             }
           }
           break;
-        case commState.WAITING_MOVE_ACK_ACK:
+        case commState.WAITING_MOVE_ACK_ACK: // player has sent a MOVE_ACK and waits for acknowledgement
           if (msg.type === msgType.MOVE_ACK_ACK) {
             if (prevData.x === msg.x && prevData.y === msg.y) {
               g.processInput(msg.x, msg.y);
@@ -160,31 +161,31 @@ const GameWindow = () => {
             }
           }
           break;
-        case commState.WAITING_PASS_ACK:
+        case commState.WAITING_PASS_ACK: // player has sent a PASS msg and waits for acknowledgement
           if(msg.type === msgType.PASS_ACK) {
             response = { message: { type: msgType.PASS_ACK_ACK }, room :rn };
             currentState = commState.NONE;
             g.pass();
           }
           break;
-        case commState.WAITING_PASS_ACK_ACK:
+        case commState.WAITING_PASS_ACK_ACK: // player has sent a PASS_ACK msg and waits for acknowledgement
           if(msg.type === msgType.PASS_ACK_ACK) {
             currentState = commState.NONE;
             g.pass();
           }
       }
-      console.log('response:');
-      console.log(response);
       if(response !== null)
         socket.emit('game', response);
     });
   }, []);
 
+  /**
+   * 
+   * @param {Number} x - Integer number of x coordinate of move  
+   * @param {Number} y - Integer number of y coordinate of move
+   */
   const broadcastMove = (x, y) => {
-    console.log('sending');
     let data = { message: { type: msgType.MOVE, x: x, y: y }, room: rn };
-    console.log(data)
-    console.log(socket);
     currentState = commState.WAITING_MOVE_ACK;
     prevData = { x: x, y: y };
     socket.emit('game', data);
