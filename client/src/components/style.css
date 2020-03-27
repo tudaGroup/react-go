@@ -1,4 +1,4 @@
-@import '~antd/dist/antd.css';
+@import '~antd/dist/antd.dark.css';
 
 body {
   background-color: #161411;
@@ -108,7 +108,7 @@ h6 {
   color: white;
 }
 
-.profile {
+.container {
   margin: 50px;
   padding: 30px;
   background-color: #262320;
@@ -158,4 +158,14 @@ h6 {
   margin: 40px;
   padding: 5px;
   background-color: rgba(64, 169, 255, 0.7);
+}
+
+.edit__title {
+  font-size: 2.5vw;
+  color: #d44e02;
+}
+
+.edit__label {
+  font-size: 1.4vw;
+  margin-bottom: 6px;
 }

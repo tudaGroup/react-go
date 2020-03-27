@@ -99,7 +99,7 @@ const Profile = () => {
 
   return (
     <div className='main'>
-      <div className='profile'>
+      <div className='container'>
         <Row>
           <Col className='profile__username'>{username}</Col>
         </Row>
