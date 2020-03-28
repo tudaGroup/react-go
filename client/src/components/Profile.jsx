@@ -7,13 +7,13 @@ import { Row, Col } from 'antd';
 import { FireOutlined, ThunderboltOutlined } from '@ant-design/icons';
 
 const Profile = () => {
-  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [memberSince, setMemberSince] = useState('May 31, 2016');
   const [biography, setBiography] = useState('');
+  const [ratings, setRatings] = useState([]);
   const [wins, setWins] = useState(7);
   const [losses, setLosses] = useState(3);
   const [games, setGames] = useState([
@@ -86,6 +86,13 @@ const Profile = () => {
         setCountry(result.data.country);
         setBiography(result.data.biography);
         setMemberSince(moment(result.data.memberSince).format('LL'));
+
+        let ratings = [];
+        for (let rating of result.data.ratings) {
+          ratings.push({ x: new Date(rating.time), y: rating.rating });
+        }
+        setRatings(ratings);
+        console.log(ratings);
       });
   }, []);
 
@@ -134,19 +141,7 @@ const Profile = () => {
         </Row>
         <Row>
           <Col span={12} className='profile__graph'>
-            <RatingChart
-              title='Rating'
-              data={[0, 4, 8, 2, 6, 10, 14]}
-              labels={[
-                'January',
-                'February',
-                'March',
-                'April',
-                'May',
-                'June',
-                'July'
-              ]}
-            />
+            <RatingChart title='Rating' ratings={ratings} />
           </Col>
           <Col span={12} className='profile__info'>
             <div>{fullName}</div>
