@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import history from '../history';
+import api from '../api';
+import moment from 'moment';
 import RatingChart from './RatingChart';
 import { Row, Col } from 'antd';
 import { FireOutlined, ThunderboltOutlined } from '@ant-design/icons';
 
 const Profile = () => {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
-  const [username, setUsername] = useState('shangsuru');
-  const [fullName, setFullName] = useState('Henry Helm');
-  const [country, setCountry] = useState('Germany');
-  const [city, setCity] = useState('Darmstadt');
+  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
   const [memberSince, setMemberSince] = useState('May 31, 2016');
-  const [biography, setBiography] = useState(
-    'Hey, I am 21 years old and I am studying computer science. I also like to play a lot of Go in my freetime!'
-  );
+  const [biography, setBiography] = useState('');
   const [wins, setWins] = useState(7);
   const [losses, setLosses] = useState(3);
   const [games, setGames] = useState([
@@ -59,6 +60,34 @@ const Profile = () => {
       player1Won: true
     }
   ]);
+  const [authToken, setAuthToken] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('jwt');
+    setAuthToken(token);
+
+    // Redirect to login page if user is without token
+    if (token === null) {
+      history.push('/login');
+    }
+
+    // Fetch user data
+    api
+      .get('users/me', {
+        headers: {
+          Authorization: 'Bearer ' + token
+        }
+      })
+      .then(result => {
+        console.log(result.data);
+        setUsername(result.data.username);
+        setFullName(result.data.givenName + ' ' + result.data.surName);
+        setCity(result.data.location);
+        setCountry(result.data.country);
+        setBiography(result.data.biography);
+        setMemberSince(moment(result.data.memberSince).format('LL'));
+      });
+  }, []);
 
   const renderRatingChanges = (oldRating, newRating, won) => {
     let ratingDifference = newRating - oldRating;

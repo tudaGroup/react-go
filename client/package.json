@@ -12,6 +12,7 @@
     "chart.js": "^2.9.3",
     "jwt-decode": "^2.2.0",
     "konva": "^4.1.6",
+    "moment": "^2.24.0",
     "plotly.js": "^1.52.3",
     "react": "^16.13.0",
     "react-chartjs-2": "^2.9.0",

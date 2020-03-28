@@ -1,7 +1,7 @@
 @import '~antd/dist/antd.dark.css';
 
 body {
-  background-color: #161411;
+  background-color: #121212;
   font-family: 'Noto Sans', sans-serif;
 }
 
@@ -52,7 +52,7 @@ h6 {
 .main {
   position: absolute;
   top: 0;
-  background-color: #161411;
+  background-color: #131313; /* #161411;*/
   width: 100%;
   height: 100%;
   color: #bababa;

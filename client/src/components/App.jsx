@@ -27,11 +27,7 @@ const particlesOptions = {
 const App = () => {
   return (
     <Router history={history}>
-      <Particles
-        className='particles'
-        height='100%'
-        params={particlesOptions}
-      />
+      <Particles height='100%' params={particlesOptions} />
       <Switch>
         <Route path='/resetpassword/:token' component={ResetPassword} />
         <Route path='/register' component={Register} />
