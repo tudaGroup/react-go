@@ -16,55 +16,10 @@ const Profile = () => {
   const [ratings, setRatings] = useState([]);
   const [wins, setWins] = useState(7);
   const [losses, setLosses] = useState(3);
-  const [games, setGames] = useState([
-    {
-      player1: 'shangsuru',
-      player2: 'lukas',
-      time: 20,
-      timeIncrement: 5,
-      size: 13,
-      rated: 'true',
-      oldRatingPlayer1: 14,
-      newRatingPlayer1: 18,
-      oldRatingPlayer2: 34,
-      newRatingPlayer2: 27,
-      timestamp: '5 days ago',
-      player1Won: true
-    },
-    {
-      player1: 'sijun',
-      player2: 'shangsuru',
-      time: 40,
-      timeIncrement: 5,
-      size: 19,
-      rated: 'true',
-      oldRatingPlayer1: 45,
-      newRatingPlayer1: 47,
-      oldRatingPlayer2: 12,
-      newRatingPlayer2: 10,
-      timestamp: '10 days ago',
-      player1Won: true
-    },
-    {
-      player1: 'shangsuru',
-      player2: 'sijun',
-      time: 10,
-      timeIncrement: 2,
-      size: 9,
-      rated: 'true',
-      oldRatingPlayer1: 42,
-      newRatingPlayer1: 47,
-      oldRatingPlayer2: 20,
-      newRatingPlayer2: 17,
-      timestamp: '11 days ago',
-      player1Won: true
-    }
-  ]);
-  const [authToken, setAuthToken] = useState('');
+  const [games, setGames] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('jwt');
-    setAuthToken(token);
 
     // Redirect to login page if user is without token
     if (token === null) {
@@ -79,7 +34,6 @@ const Profile = () => {
         }
       })
       .then(result => {
-        console.log(result.data);
         setUsername(result.data.username);
         setFullName(result.data.givenName + ' ' + result.data.surName);
         setCity(result.data.location);
@@ -92,7 +46,19 @@ const Profile = () => {
           ratings.push({ x: new Date(rating.time), y: rating.rating });
         }
         setRatings(ratings);
-        console.log(ratings);
+
+        // Fetch games
+        api
+          .get(`games/${result.data.username}`, {
+            headers: {
+              Authorization: 'Bearer ' + token
+            }
+          })
+          .then(result => {
+            setGames(result.data.games);
+            setWins(result.data.wins);
+            setLosses(result.data.losses);
+          });
       });
   }, []);
 
@@ -185,7 +151,7 @@ const Profile = () => {
                         {size == 9 ? 'SMALL' : size == 13 ? 'MEDIUM' : 'LARGE'}{' '}
                         • {rated ? 'RATED' : 'CASUAL'}
                       </Row>
-                      <Row>{timestamp}</Row>
+                      <Row>{moment(timestamp).fromNow()}</Row>
                     </Col>
                   </Row>
                 </Col>
