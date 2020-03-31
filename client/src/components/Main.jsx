@@ -2,16 +2,27 @@ import React, { useState, useEffect } from 'react';
 import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
-import { Button, Col, InputNumber, Modal, Radio, Row, Slider } from 'antd';
+import {
+  Button,
+  Col,
+  InputNumber,
+  Modal,
+  Radio,
+  Row,
+  Slider,
+  Input
+} from 'antd';
 import {
   ClockCircleOutlined,
   DingdingOutlined,
   PoweroffOutlined,
+  SearchOutlined,
   SettingOutlined,
   TrophyOutlined,
   UpCircleOutlined,
   UserOutlined
 } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 
 let socket;
 
@@ -26,6 +37,8 @@ const Main = () => {
   const [selectedGameMode, setSelectedGameMode] = useState('casual'); // rated or casual games
   const [challenges, setChallenges] = useState([]); // Objects with name, id, rating, size, time, increment, mode
   const [authToken, setAuthToken] = useState('');
+  const [searchHidden, setSearchHidden] = useState(true);
+  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('jwt');
@@ -181,15 +194,37 @@ const Main = () => {
     return <div className='main'></div>;
   }
 
+  const handleKeyPress = e => {
+    if (e.key === 'Enter') {
+      history.push(`/profile/${searchText}`);
+    }
+  };
+
   return (
     <div className='main'>
       <div id='menu'>
-        <span className='menu__item'>
-          <UserOutlined /> {username}
+        <span className='profile__searchicon'>
+          <SearchOutlined onClick={() => setSearchHidden(!searchHidden)} />
         </span>
-        <span className='menu__item'>
-          <SettingOutlined /> Preferences
-        </span>
+        {searchHidden ? null : (
+          <Input
+            placeholder='Search'
+            className='profile__searchfield'
+            value={searchText}
+            onChange={e => setSearchText(e.target.value)}
+            onKeyPress={e => handleKeyPress(e)}
+          />
+        )}
+        <Link to={{ pathname: `/profile/${username}` }}>
+          <span className='menu__item'>
+            <UserOutlined /> {username}
+          </span>
+        </Link>
+        <Link to='/settings'>
+          <span className='menu__item'>
+            <SettingOutlined /> Settings
+          </span>
+        </Link>
         <span className='menu__item' onClick={handleLogout}>
           <PoweroffOutlined /> Sign out
         </span>

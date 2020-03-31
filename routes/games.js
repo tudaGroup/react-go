@@ -54,7 +54,13 @@ router.get('/games/:player', auth, async (req, res) => {
   let games = await Game.find({
     $or: [{ player1: player }, { player2: player }]
   }).sort({ _id: -1 });
-  res.send(games);
+
+  let wins = games.filter(game => {
+    (game.player1 === player && player1Won) ||
+      (game.player1 !== player && !player1Won);
+  }).length;
+  let losses = games.length - wins;
+  res.send({ games, wins, losses });
 });
 
 // Update rating changes and winner after completion of the game

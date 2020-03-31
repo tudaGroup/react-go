@@ -26,7 +26,6 @@ mongoose.connect('mongodb://localhost/go', {
 
 // Socket.IO
 io.on('connection', socket => {
-  console.log('New client connected');
   socket.emit('challenges', getChallenges()); // Send challenges to new client
 
   socket.on('updateChallenges', data => {
@@ -46,8 +45,6 @@ io.on('connection', socket => {
   socket.on('game', data => {
     io.to(data.room).emit('game', data.message);
   });
-
-  socket.on('disconnect', () => console.log('Client disconnected'));
 });
 
 const PORT = process.env.PORT || 8000;
