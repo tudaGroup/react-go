@@ -27,7 +27,7 @@ h6 {
 }
 
 .entry__error {
-  color: red;
+  color: #cc3233;
 }
 
 .entry__message {
@@ -75,6 +75,7 @@ h6 {
   border-radius: 15px;
   padding: 10px;
   cursor: pointer;
+  transition: background-color 0.5s ease;
 }
 
 .challenge__items:hover {
@@ -148,6 +149,7 @@ h6 {
   padding: 15px;
   border-radius: 15px;
   width: 50%;
+  transition: background-color 0.5s ease;
 }
 
 .profile__game:hover {
@@ -160,6 +162,21 @@ h6 {
   background-color: rgba(64, 169, 255, 0.7);
 }
 
+.profile__searchfield {
+  width: 13vw;
+  border: none;
+  font-size: 1.2vw;
+}
+
+.profile__searchfield:focus {
+  box-shadow: none;
+}
+
+.profile__searchicon {
+  margin: 3px;
+  translate: ;
+}
+
 .edit__title {
   font-size: 2.5vw;
   color: #d44e02;
@@ -168,4 +185,24 @@ h6 {
 .edit__label {
   font-size: 1.4vw;
   margin-bottom: 6px;
+}
+
+.notification {
+  position: absolute;
+  width: 34%;
+  top: 50%;
+  left: 33%;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 1.3vw;
+  background-color: #131313;
+  border: 0.5px solid #303030;
+  border-radius: 2px;
+  padding: 20px;
+  transition: background-color 0.5s ease;
+  cursor: pointer;
+}
+
+.notification:hover {
+  background-color: #629923;
 }

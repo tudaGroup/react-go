@@ -17,6 +17,7 @@ const Profile = () => {
   const [wins, setWins] = useState(7);
   const [losses, setLosses] = useState(3);
   const [games, setGames] = useState([]);
+  const [userNotFound, setUserNotFound] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('jwt');
@@ -26,9 +27,11 @@ const Profile = () => {
       history.push('/login');
     }
 
+    // Get username of requested profile
+    const requestedProfile = document.URL.split('/').pop();
     // Fetch user data
     api
-      .get('users/me', {
+      .get(`users/${requestedProfile}`, {
         headers: {
           Authorization: 'Bearer ' + token
         }
@@ -59,6 +62,9 @@ const Profile = () => {
             setWins(result.data.wins);
             setLosses(result.data.losses);
           });
+      })
+      .catch(e => {
+        setUserNotFound(true);
       });
   }, []);
 
@@ -98,6 +104,14 @@ const Profile = () => {
       />
     );
   };
+
+  if (userNotFound) {
+    return (
+      <div className='notification' onClick={() => history.push('/')}>
+        User not found!
+      </div>
+    );
+  }
 
   return (
     <div className='main'>

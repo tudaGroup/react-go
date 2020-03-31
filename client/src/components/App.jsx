@@ -6,6 +6,7 @@ import GameWindow from './GameWindow';
 import PasswordResetRequest from './PasswordResetRequest';
 import Profile from './Profile';
 import Settings from './Settings';
+import NotFound from './NotFound';
 import history from '../history';
 import { Router, Switch, Route } from 'react-router-dom';
 import Particles from 'react-particles-js';
@@ -36,6 +37,7 @@ const App = () => {
         <Route path='/game' component={GameWindow} />
         <Route path='/profile/:id' component={Profile} />
         <Route path='/settings' component={Settings} />
+        <Route path='/notfound' component={NotFound} />
         <Route exact path='/' component={Main} />
       </Switch>
     </Router>
