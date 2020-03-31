@@ -4,7 +4,7 @@ import api from '../api';
 import moment from 'moment';
 import RatingChart from './RatingChart';
 import { Row, Col } from 'antd';
-import { FireOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { ThunderboltOutlined } from '@ant-design/icons';
 
 const Profile = () => {
   const [username, setUsername] = useState('');
