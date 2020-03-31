@@ -90,6 +90,22 @@ const Profile = () => {
         altText = 'Germany';
         countryID = 'DE';
         break;
+      case 'Korea':
+        altText = 'Korea';
+        countryID = 'KR';
+        break;
+      case 'Taiwan':
+        altText = 'Taiwan';
+        countryID = 'TW';
+        break;
+      case 'Sweden':
+        altText = 'Sweden';
+        countryID = 'SE';
+        break;
+      case 'France':
+        altText = 'France';
+        countryID = 'FR';
+        break;
       default:
         altText = 'USA';
         countryID = 'US';
