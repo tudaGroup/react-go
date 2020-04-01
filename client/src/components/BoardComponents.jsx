@@ -7,9 +7,12 @@ import { Stage, Layer, Rect, Circle, Line, Group } from 'react-konva';
 class Game extends Component {
   /**
    *
-   * @param {number} props.boardSize - sets the size of the board during the game
-   * @param {Player} props.player1   - Player 1
-   * @param {Player} props.player2   - Player 2
+   * @param {number}   props.boardSize - sets the size of the board during the game
+   * @param {Player}   props.player1   - Player 1
+   * @param {Player}   props.player2   - Player 2
+   * @param {Player}   props.ownPlayer - Player that is controlling
+   * @param {function} props.broadcast - broadcast function
+   * @param {Boolean}  props.multi     - boolean value whether game is in multiplayermode
    */
   constructor(props) {
     super(props);
@@ -35,6 +38,10 @@ class Game extends Component {
     };
   }
 
+  getHistory() {
+    return this.state.history;
+  }
+
   render() {
     const history = this.state.history;
     const current = history[this.state.round];
@@ -48,9 +55,9 @@ class Game extends Component {
     );
     return (
       <div>
-        <button onClick={() => this.undo(1)}>{'Undo'}</button>
-        <button onClick={() => this.redo(1)}>{'Redo'}</button>
-        <button onClick={() => this.pass()}>{'Pass'}</button>
+        {/*<button onClick={() => this.undo(1)}>{'Undo'}</button>*/null}
+        {/*<button onClick={() => this.redo(1)}>{'Redo'}</button>*/null}
+        <button onClick={() => this.handlePass()}>{'Pass'}</button>
         {this.state.gameEnd ? (
           <h1 style={{ color: 'white' }}>
             Game has ended!{' '}
@@ -81,7 +88,7 @@ class Game extends Component {
         </h1>
         <Board
           boardSize={this.props.boardSize}
-          onClick={(x, y) => this.handleInput(x, y)}
+          onClick={(x, y) => this.handleClick(x, y)}
           currField={current.gameState.field}
           currPlayer={this.state.currPlayer}
         />
@@ -114,13 +121,20 @@ class Game extends Component {
    * @param {integer} x - x coordinate of the clicked Field
    * @param {integer} y - y coordinate of the clicked Field
    */
-  handleInput(x, y, multi, player) {
-    if ((multi && player !== this.state.currPlayer) || this.state.gameEnd)
+  handleClick(x, y) {
+    if ((this.props.multi && this.props.ownPlayer !== this.state.currPlayer) || this.state.gameEnd)
       return;
-    const history = this.state.history.slice(0, this.state.round + 1);
-    const current = history[history.length - 1];
+    this.props.broadcast(x, y);
+  }
 
-    if (!this.state.availableMoves[y * this.props.boardSize + x]) return;
+  handlePass() {
+    console.log('pass init')
+    this.props.pass();
+  }
+
+
+  processInput(x, y) {
+    if (!this.state.availableMoves[y * this.props.boardSize + x]) this.props.err(this.state);
     this.onNextMove(this.state.availableMoves[y * this.props.boardSize + x]);
   }
 

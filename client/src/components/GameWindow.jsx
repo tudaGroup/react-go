@@ -3,8 +3,37 @@ import jwt_decode from 'jwt-decode';
 import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
+import { Game, Player } from './BoardComponents';
+
+
+const msgType = {
+  MOVE:         'MOVE',
+  MOVE_ACK:     'MOVE_ACK',
+  MOVE_ACK_ACK: 'MOVE_ACK_ACK',
+  PASS:         'PASS',
+  PASS_ACK:     'PASS_ACK',
+  PASS_ACK_ACK: 'PASS_ACK_ACK',
+  ERR:          'ERR',
+  NULL:         'NULL'
+}
+
+const commState = {
+  NONE:                 'NONE',
+  WAITING_MOVE_ACK:     'WAITING_MOVE_ACK',
+  WAITING_MOVE_ACK_ACK: 'WAITING_MOVE_ACK_ACK',
+  WAITING_PASS_ACK:     'WAITING_PASS_ACK',
+  WAITING_PASS_ACK_ACK: 'WAITING_PASS_ACK_ACK'
+}
 
 let socket;
+let g = null;
+let rn = '';
+let prevData = {x: NaN, y: NaN};
+let currentState = commState.NONE;
+
+/**
+ * all messages in the room have the structur { message: data of to be sent message, room: room number }
+ */
 
 const GameWindow = () => {
   const [authToken, setAuthToken] = useState('');
@@ -17,6 +46,8 @@ const GameWindow = () => {
   const [oldRatingPlayer1, setOldRatingPlayer1] = useState(0);
   const [oldRatingPlayer2, setOldRatingPlayer2] = useState(0);
   const [roomName, setRoomName] = useState('');
+  const [game, setGame] = useState(null);
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     async function getActiveGame(player1, player2, token) {
@@ -43,7 +74,20 @@ const GameWindow = () => {
       setRated(response.data.rated);
       setOldRatingPlayer1(response.data.oldRatingPlayer1);
       setOldRatingPlayer2(response.data.oldRatingPlayer2);
+      
+      
+      p1 = <Player name={response.data.player1} playerColor={'#383b40'}/>;
+      p2 = <Player name={response.data.player2} playerColor={'#f5f9ff'}/>;
+      let un = localStorage.getItem('username');
+      setUsername(un);
+      let ownPlayer = p1.props.name === un ? p1 : p2;
+      g = <Game ref={(game) => g = game} boardSize={response.data.size} player1={p1} player2={p2} ownPlayer={ownPlayer} broadcast={broadcastMove} pass={pass} multi={true}/>
+      setGame(g);
+      
     }
+
+    var p1;
+    var p2;
 
     const token = localStorage.getItem('jwt');
     setAuthToken(token);
@@ -64,23 +108,95 @@ const GameWindow = () => {
     let player1 = urlParams.get('player1');
     let player2 = urlParams.get('player2');
 
-    getActiveGame(player1, player2, token);
-
     // Set up communication between the two players exclusively
     const room = `${player1}-${player2}`;
+    rn = room;
     setRoomName(room);
     socket = socketIOClient('http://localhost:8000');
     socket.emit('joinGame', room);
 
+    getActiveGame(player1, player2, token);
+   
+
     // Sample game event
-    socket.on('game', data => {
-      console.log('Game Message!');
+    socket.on('game', msg => {
+      if (msg.type === msgType.ERR) { // received an error, exit program
+        console.log(msg);
+        throw Error(msg.errmsg);
+      }
+      let response = null;
+      switch (currentState) {
+        case commState.NONE: // the current player has made no move nor passed
+          if (msg.type === msgType.MOVE) {
+            prevData = { x: msg.x, y: msg.y };
+            response = { message: { type: msgType.MOVE_ACK, ...prevData}, room: rn };
+            currentState = commState.WAITING_MOVE_ACK_ACK;
+          } else if ( msg.type === msgType.PASS ) {
+            response = { message: { type: msgType.PASS_ACK }, room: rn };
+            currentState = commState.WAITING_PASS_ACK_ACK;
+          }
+          break;
+        case commState.WAITING_MOVE_ACK: // player has sent a MOVE msg and waits for acknowledgement
+          if (msg.type === msgType.MOVE_ACK) {
+            if (prevData.x === msg.x && prevData.y === msg.y) {
+              response = { message: { type: msgType.MOVE_ACK_ACK, ...prevData }, room: rn };
+              currentState = commState.NONE;
+              g.processInput(msg.x, msg.y);
+            } else {
+              let errmsg = 'Error occured during MOVE_ACK: expected ' + prevData.toString() + ' but received ' + { x: msg.x, y: msg.y }.toString();
+              response = { message: { type: msgType.ERR, errmsg:  errmsg}, room: rn };
+              currentState = commState.NONE;
+            }
+          }
+          break;
+        case commState.WAITING_MOVE_ACK_ACK: // player has sent a MOVE_ACK and waits for acknowledgement
+          if (msg.type === msgType.MOVE_ACK_ACK) {
+            if (prevData.x === msg.x && prevData.y === msg.y) {
+              g.processInput(msg.x, msg.y);
+              currentState = commState.NONE;
+            } else {
+              let errmsg = 'Error occured during MOVE_ACK_ACK: expected ' + prevData.toString() + ' but received ' + { x: msg.x, y: msg.y }.toString();
+              response = { message: { type: msgType.ERR, errmsg:  errmsg}, room: rn };
+              currentState = commState.NONE;
+            }
+          }
+          break;
+        case commState.WAITING_PASS_ACK: // player has sent a PASS msg and waits for acknowledgement
+          if(msg.type === msgType.PASS_ACK) {
+            response = { message: { type: msgType.PASS_ACK_ACK }, room :rn };
+            currentState = commState.NONE;
+            g.pass();
+          }
+          break;
+        case commState.WAITING_PASS_ACK_ACK: // player has sent a PASS_ACK msg and waits for acknowledgement
+          if(msg.type === msgType.PASS_ACK_ACK) {
+            currentState = commState.NONE;
+            g.pass();
+          }
+      }
+      if(response !== null)
+        socket.emit('game', response);
     });
   }, []);
 
-  const testCommunication = () => {
-    socket.emit('game', { message: 'game message', room: roomName });
+  /**
+   * 
+   * @param {Number} x - Integer number of x coordinate of move  
+   * @param {Number} y - Integer number of y coordinate of move
+   */
+  const broadcastMove = (x, y) => {
+    let data = { message: { type: msgType.MOVE, x: x, y: y }, room: rn };
+    currentState = commState.WAITING_MOVE_ACK;
+    prevData = { x: x, y: y };
+    socket.emit('game', data);
   };
+
+  const pass = () => {
+    currentState = commState.WAITING_PASS_ACK;
+    socket.emit('game', {message: { type: msgType.PASS }, room: rn });
+  };
+
+ 
 
   return (
     <div className='main'>
@@ -93,7 +209,7 @@ const GameWindow = () => {
       <div>Mode: {rated ? 'rated' : 'casual'}</div>
       <div>Old Rating Player 1: {oldRatingPlayer1}</div>
       <div>Old Rating Player 2: {oldRatingPlayer2}</div>
-      <button onClick={testCommunication}>Communicate!</button>
+      {game}
     </div>
   );
 };

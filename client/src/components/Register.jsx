@@ -20,12 +20,12 @@ const Register = () => {
     api
       .post('/users', { username, email, password })
       .then(res => {
-        console.log(res);
         localStorage.setItem('jwt', res.data.token);
         history.push('/');
       })
       .catch(error => {
         createErrorMessage('Username or email not available.');
+        console.log(error);
       });
   };
 
