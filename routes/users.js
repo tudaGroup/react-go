@@ -35,6 +35,15 @@ router.get('/users/me', auth, async (req, res) => {
   res.send(req.user);
 });
 
+router.get('/users/:name', auth, async (req, res) => {
+  let username = req.params.name;
+  let user = await User.findOne({ username });
+  if (!user) {
+    res.status(404).send();
+  }
+  res.send(user);
+});
+
 // Updates any whitelisted attributes of the user
 router.patch('/users/me', auth, async (req, res) => {
   const updates = Object.keys(req.body);
@@ -68,33 +77,38 @@ router.patch('/users/me', auth, async (req, res) => {
 router.post('/users/forgotpassword', async (req, res) => {
   const email = req.body.email;
   const user = await User.findByLoginID(email);
-  if(!user)
-    return res.status(400).send("USERNOTFOUND");
+  if (!user) return res.status(400).send('USERNOTFOUND');
   user.resettime = new Date(Date.now());
   user.reset = true;
   await user.save();
-  var token = jwt.sign({email: user.email}, user.resettime.toISOString() + user.memberSince.toISOString(), {expiresIn: '24h'});
+  var token = jwt.sign(
+    { email: user.email },
+    user.resettime.toISOString() + user.memberSince.toISOString(),
+    { expiresIn: '24h' }
+  );
   gapi.sendResetEmail(user.email, user.username, token);
-  res.send("SUCCESS");
-})
+  res.send('SUCCESS');
+});
 
 // checks if reset password token is valid and sends matching username
 router.get('/users/resetpassword', async (req, res) => {
   var decoded = jwt.decode(req.query.token);
   const user = await User.findByLoginID(decoded.email);
   try {
-    jwt.verify(req.query.token, user.resettime.toISOString() + user.memberSince.toISOString());
+    jwt.verify(
+      req.query.token,
+      user.resettime.toISOString() + user.memberSince.toISOString()
+    );
     await user.save();
-    res.status(201).send({username: user.username});
-  } catch(err) {
-    if(err.name === 'TokenExpiredError')
-      res.status(400).send('EXPIRED');
-    else if(err.name === 'JsonWebTokenError')
+    res.status(201).send({ username: user.username });
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') res.status(400).send('EXPIRED');
+    else if (err.name === 'JsonWebTokenError')
       res.status(400).send('TOKENERROR');
     user.reset = false;
     user.save();
   }
-})
+});
 
 // updates password(password reset)
 router.patch('/users/resetpassword', async (req, res) => {
@@ -102,33 +116,43 @@ router.patch('/users/resetpassword', async (req, res) => {
   var user;
   try {
     user = await User.findByLoginID(username);
-  } catch(err) {
-    console.log(err.stack)
+  } catch (err) {
+    console.log(err.stack);
   }
-  if(!user.reset) { // user has not made a password reset request
+  if (!user.reset) {
+    // user has not made a password reset request
     res.status(400).send('INVALIDREQUEST');
     return;
   }
-  try{
-    await jwt.verify(req.body.token, user.resettime.toISOString() + user.memberSince.toISOString());
-  } catch(err) {
+  try {
+    await jwt.verify(
+      req.body.token,
+      user.resettime.toISOString() + user.memberSince.toISOString()
+    );
+  } catch (err) {
     res.status(400).send('TOKENERR');
     user.reset = false;
     user.save();
-    fs.writeFileSync('./errorLog.txt', "line 117 reached!\n" + err.stack.toString());
+    fs.writeFileSync(
+      './errorLog.txt',
+      'line 117 reached!\n' + err.stack.toString()
+    );
     return;
   }
   user.password = req.body.password;
   user.reset = false;
   try {
     await user.save();
-  } catch(err) {
+  } catch (err) {
     res.status(400).send('DBERR');
-    fs.writeFileSync('./errorLog.txt', "line 127 reached!\n" + err.stack.toString() + '\n' + user);
+    fs.writeFileSync(
+      './errorLog.txt',
+      'line 127 reached!\n' + err.stack.toString() + '\n' + user
+    );
     return;
   }
   res.status(201).send('SUCCESS');
-})
+});
 
 // Deletes the user
 router.delete('/users/me', auth, async (req, res) => {

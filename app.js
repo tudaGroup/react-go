@@ -30,6 +30,7 @@ var onlinePlayers = [];
 io.on('connection', socket => {
   console.log('New client connected');
   var username;
+  
   socket.emit('challenges', getChallenges()); // Send challenges to new client
 
   // sets username for socket connection(later to be used for deleting all challenges from this user)
@@ -52,7 +53,7 @@ io.on('connection', socket => {
   socket.on('game', data => {
     io.to(data.room).emit('game', data.message);
   });
-
+  
   socket.on('disconnect', () => {
     console.log(username  + ' logged out');
     let filteredChallenges = getChallenges().filter(
