@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import jwt_decode from 'jwt-decode';
 import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
 import { Game, Player } from './BoardComponents';
-import { Layout, Menu, Breadcrumb } from 'antd';
+import { Layout, Row, Col } from 'antd';
 import 'antd/dist/antd.css';
+
 
 const { Header, Content, Footer } = Layout;
 
@@ -27,6 +28,13 @@ const commState = {
   WAITING_PASS_ACK:     'WAITING_PASS_ACK',
   WAITING_PASS_ACK_ACK: 'WAITING_PASS_ACK_ACK'
 }
+
+const INFOBOXSYMBOLRATIO = 6;
+const INFOBOXWIDTH = 275;
+const MARGIN = 20;
+const CHATBOXWIDTH = 590;
+const CHATBOXHEIGHT = 440;
+
 
 /**
  * this.g                   - game object to call methods of BoardComponent.Game
@@ -55,8 +63,9 @@ class GameWindow extends React.Component {
       loading: true,
       currentState: commState.NONE,
       prevData: { x: NaN, y: NaN },
-      boardToScreenRatio: 0.8,
-      round: 1
+      boardToScreenRatio: 0.3 ,
+      round: 1,
+      viewmode: 0,
     };
   }
 
@@ -119,13 +128,15 @@ class GameWindow extends React.Component {
     this.p2 = <Player name={gameData.data.player2} playerColor={'#f5f9ff'} data={user2.data}/>
     this.un = localStorage.getItem('username');
     this.ownPlayer = this.p1.props.name === this.un ? this.p1 : this.p2;
-    this.game  = <Game ref={ game => this.g = game } boardSize={gameData.data.size} player1={this.p1} player2={this.p2} ownPlayer={this.ownPlayer} boardHW={this.getOptimalCanvasSize()} broadcast={this.broadcastMove.bind(this)} pass={this.pass} multi={true}/>;
+    let canvassize = this.getNewCanvasSize();
+    this.game  = <Game ref={ game => this.g = game } boardSize={gameData.data.size} player1={this.p1} player2={this.p2} ownPlayer={this.ownPlayer} boardHW={canvassize} broadcast={this.broadcastMove.bind(this)} pass={this.pass} multi={true}/>;
 
     window.addEventListener('resize', this.onResize);
 
-    // Sample game event
+    
     this.socket.on('game', this.onMessage);
-    this.setState({ loading: false, currentPlayer: this.p1 });
+    this.setState({ loading: false, currentPlayer: this.p1, canvasSize: canvassize });
+    this.setOptimalViewMode();
   }
 
   
@@ -212,20 +223,15 @@ class GameWindow extends React.Component {
   };
 
 
-  /**
-   * Player and current game information
-   */
-  displayInfo =  () => {
+
+
+  gameInfo = () => {
     return (
-      <div style={{ display: 'flex', flexGrow: 1 }}>
-        {this.playerInfo(this.p1)}
-        <div className='infobox' style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div className='infobox' style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ borderRadius: '50%', border: '0', backgroundColor: this.state.currentPlayer ? this.state.currentPlayer.props.playerColor : 'purple', width: '20px', height: '20px' }}></div>
           <div>Round {this.state.round}</div>
-        </div>
-        {this.playerInfo(this.p2)}
       </div>
-    );
+    )
   }
 
   
@@ -266,7 +272,7 @@ class GameWindow extends React.Component {
         width='5%'
         alt={altText}
         src={`http://catamphetamine.gitlab.io/country-flag-icons/3x2/${countryID}.svg`}
-        style={{ width: '30px', height: '20px' }}
+        className='flag'
       />
     );
   };
@@ -280,17 +286,53 @@ class GameWindow extends React.Component {
       return null;
     let playerColor = player.props.playerColor;
     return(
-        <div className='infobox'> 
-          <div className='userinfocolsym'>
-            <div style={{ borderRadius: '50%', border: '0', backgroundColor: playerColor, width: '20px', height: '20px' }}/>
-            <div>{this.renderFlag(player.props.data.country)}</div>
-            <div><img src={process.env.PUBLIC_URL + '/rank_sym.png'} widht='20px' height='20px'></img></div>
-          </div>
-          <div className='userinfocol'> 
-            <div>{player.props.name}</div>
-            <div>{player.props.data.country}</div>
-            <div>{player.props.data.ratings[player.props.data.ratings.length - 1].rating}</div>
-          </div>
+        <div className='infobox'>
+          <Row type='flex' className="infoboxrow">
+            <Col span={INFOBOXSYMBOLRATIO}>
+              <div className='infoboxiconcontainer'>
+                <div style={{ borderRadius: '50%', border: '0', backgroundColor: playerColor, width: '20px', height: '20px' }}/>
+              </div>
+            </Col>
+            <Col>
+              {player.props.name ? player.props.name : 'Undefined'}
+            </Col>
+          </Row>
+          <Row type='flex' className="infoboxrow">
+            <Col span={INFOBOXSYMBOLRATIO}>
+              <div className='infoboxiconcontainer'>
+                {player.props.data.country ? 
+                  <div style={{ height: 'min-content', width: 'min-content'}}>
+                    {this.renderFlag(player.props.data.country)}
+                  </div> 
+                  : 
+                  <div style={{ backgroundColor: 'white', width: '30px', height: '20px' }}/>
+                }
+              </div>
+            </Col>
+            <Col>
+              {player.props.data.country ? player.props.data.country : 'Undefined'}
+            </Col>
+          </Row>
+          <Row type='flex' className="infoboxrow">
+            <Col span={INFOBOXSYMBOLRATIO} className='infoboxiconcontainer'>
+              <div className='infoboxicon'>
+                <img src={process.env.PUBLIC_URL + '/rank_sym.png'} className='sicon'/>
+              </div>
+            </Col>
+            <Col>
+              {player.props.data.ratings[player.props.data.ratings.length - 1].rating}
+            </Col>
+          </Row>
+          <Row type='flex' className="infoboxrow">
+            <Col span={INFOBOXSYMBOLRATIO} className='infoboxiconcontainer'>
+              <div className='infoboxicon'>
+                <img src={process.env.PUBLIC_URL + '/time_icon.png'} className='sicon'/>
+              </div>
+            </Col>
+            <Col>
+                {/** insert time rendering component here */'00:00'}
+            </Col>
+          </Row>
         </div>
     )
   }
@@ -299,10 +341,52 @@ class GameWindow extends React.Component {
   /**
    * calculates optimal canvas size depending on window size
    */
-  getOptimalCanvasSize = () => {
-    const minSize = 300;
-    let smallerAxis = window.innerHeight > window.innerLength ? window.innerLength : window.innerHeight;
-    return smallerAxis * this.state.boardToScreenRatio > minSize ? smallerAxis * this.state.boardToScreenRatio : minSize;
+  getNewCanvasSize = () => {
+    return window.innerWidth * this.state.boardToScreenRatio > 400 ? window.innerWidth * this.state.boardToScreenRatio : 400;
+  }
+
+  setOptimalViewMode = () => {
+    if(window.innerWidth - (this.state.canvasSize + INFOBOXWIDTH + CHATBOXWIDTH + 6 * MARGIN) >= 0) 
+      this.setState({ viewmode: 0 });
+    else
+      this.setState({ viewmode: 1 });
+  }
+
+  contentView = () => {
+    if(this.state.viewmode == 0)
+      return (
+        <div className='gamewindow-contentview'>
+          <div className='player-info-box-v'>
+            {this.playerInfo(this.p1)}
+            {this.playerInfo(this.p2)}
+          </div>
+          <div className='boardview'>
+            {this.game}
+          </div>
+          {this.chatbox()}
+        </div>
+      );
+    else
+      return (
+        <div className='gamewindow-contentview'>
+          <div className='boardview'>
+            {this.game}
+          </div>
+          {this.chatbox()}
+          <div className='player-info-box-h'>
+            {this.playerInfo(this.p1)}
+            {this.playerInfo(this.p2)}
+          </div>
+        </div>
+      )
+  }
+
+  chatbox = () => {
+    return (
+      <div style={{ flexGrow: '1' , flexBasis: 'auto', width: CHATBOXWIDTH, height: CHATBOXHEIGHT, display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: this.state.viewmode === 0 ? 'flex-start' :  'center', margin:'20px' }}>
+        <div style={{ backgroundColor: 'grey', borderRadius: '10px', width: CHATBOXWIDTH, height: CHATBOXHEIGHT }}></div>
+      </div>
+    )
   }
 
 
@@ -310,8 +394,35 @@ class GameWindow extends React.Component {
    * resize handler
    */
   onResize = () => {
-    let newSize = this.getOptimalCanvasSize();
+    let newSize = this.getNewCanvasSize();
+    this.setState({ canvasSize: newSize });
+    this.setOptimalViewMode();
     this.g.setCanvasSize(newSize);
+  }
+
+  /**
+   * Player and current game information
+   */
+  displayInfo =  () => {
+    return (
+      <div style={{ display: 'flex', flexGrow: 1, alignContent: 'space-between' }}>
+        {this.playerInfo(this.p1)}
+        {this.gameInfo()}
+        {this.playerInfo(this.p2)}
+      </div>
+    );
+  }
+
+  increaseBoardRatio = () => {
+    if(this.state.boardToScreenRatio >= 0.9) 
+      return;
+    this.setState({ boardToScreenRatio: this.state.boardToScreenRatio - 0.1 });
+  }
+
+  decreaseBoardRatio = () => {
+    if(this.state.boardToScreenRatio <= 0.3) 
+      return;
+    this.setState({ boardToScreenRatio: this.state.boardToScreenRatio - 0.1 });
   }
 
   
@@ -320,20 +431,14 @@ class GameWindow extends React.Component {
       return null;
     return (
       <div className='main'>
-          <Layout className='ant-layout'>
-            <Header className='gamewindow-header'>
-                <img src={process.env.PUBLIC_URL + '/ReactGo.png'} />
-                ReactGo
-            </Header>
-          </Layout>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <div className='boardview'>
-              {this.game}
-            </div>
-            <div className='info-chat-box'>
-              {this.displayInfo()}
+          <div className='gamewindow-header'>
+            <div style={{ padding: '5px' }}>
+              <img src={process.env.PUBLIC_URL + '/ReactGo.png'} />
+              ReactGo
+              <div style={{ float: 'right', width: 400, height: 50, backgroundColor: 'white'}}></div>
             </div>
           </div>
+          {this.contentView()}
       </div>
     );
   }

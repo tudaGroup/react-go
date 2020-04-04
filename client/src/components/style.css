@@ -208,8 +208,7 @@ h6 {
 }
 
 .gamewindow-header {
-  height: auto;
-  max-height: 70px;
+  height: 65px;
   background-color: #262320;
   font-size: 25px;
 }
@@ -223,8 +222,8 @@ h6 {
 .info-chat-box {
   margin: 30px;
   display: flex;
-  flex-wrap: wrap;
-  align-content: space-between;
+  flex-direction: column;
+  align-content: flex-start;
   justify-content: center;
   flex-grow: 1;
   padding: 20px;
@@ -232,15 +231,43 @@ h6 {
   border-radius: 17px;
 }
 
-.infobox {
-  margin: 15px;
-  display: flex;
-  flex-grow: 1;
+.infobox {  
+  margin: 20px;
+  flex-basis: auto;
+  width: 275px;
+  height: 200px;
   padding: 10px;
   font-size: 15px;
   background-color: #6c6967;
-  border-radius: 10px;
+  border-radius: 5px;
   color: white;
+}
+
+.infoboxrow {
+  margin: 15px;
+  width: 100%;
+  align: middle;
+}
+
+.infoboxiconcontainer {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  offset: 2;
+}
+
+.flag {
+  width: 30px;
+  height: 20px;
+  display: block;
+}
+
+.sicon {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .sendbutton {
@@ -268,21 +295,33 @@ h6 {
 .boardview {
   width: fit-content;
   height: fit-content;
-  margin: 15px;
+  margin: 20px;
   border-radius: 1.5%;
   overflow: hidden;
 }
 
-.userinfocol, .userinfocolsym {
+.gamewindow-contentview {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 2;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+}
+
+.player-info-box-v {
   display: flex;
   flex-direction: column;
-  margin: 7px;
+  flex-grow: 1;
+  justify-content: center;
+  align-items: flex-end;
+  align-content: center;
 }
 
-.userinfocolsym {
+.player-info-box-h {
+  display: flex;
+  flex-basis: 100%;
+  justify-content: center;
   align-items: center;
-}
-
-.userinfocol div, .userinfocolsym div {
-  margin: 7px;
+  align-content: center;
 }
