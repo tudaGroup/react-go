@@ -112,7 +112,8 @@ class Game extends Component {
   }
 
   handlePass() {
-    console.log('pass init')
+    if ((this.props.multi && this.props.ownPlayer !== this.state.currPlayer) || this.state.gameEnd)
+      return;
     this.props.pass();
   }
 

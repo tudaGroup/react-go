@@ -28,6 +28,21 @@ const commState = {
   WAITING_PASS_ACK_ACK: 'WAITING_PASS_ACK_ACK'
 }
 
+/**
+ * this.g                   - game object to call methods of BoardComponent.Game
+ * this.game                - game object for rendering the game
+ * this.state.canvasSize    - size of rendered board in pixel
+ * this.state.currentPlayer - current Player
+ * this.state.prevData      - previous transmitted move data
+ * this.socket              - socket 
+ * this.decoded             - JSONWebToken
+ * this.roomName            - roomName for Game Communication
+ * this.p1                  - BoardComponents.Player instance of Player 1
+ * this.p2                  - BoardComponents.Player instance of Player 2
+ * this.un                  - username of own Player 
+ * this.ownPlayer           - 
+ *  
+ */
 class GameWindow extends React.Component {
    
 
@@ -70,8 +85,6 @@ class GameWindow extends React.Component {
     this.socket = socketIOClient('http://localhost:8000');
     this.socket.emit('joinGame', this.roomName);
 
-    console.log(this.socket);
-
     const gameData = await api.get(
       `/games/active?player1=${pl1}&player2=${pl2}`,
       {
@@ -111,69 +124,72 @@ class GameWindow extends React.Component {
     window.addEventListener('resize', this.onResize);
 
     // Sample game event
-    this.socket.on('game', msg => {
-      if (msg.type === msgType.ERR) { // received an error, exit program
-        console.log(msg);
-        throw Error(msg.errmsg);
-      }
-      console.log('received');
-      console.log(this.socket);
-      console.log(msg);
-      let response = null;
-      switch (this.state.currentState) {
-        case commState.NONE: // the current player has made no move nor passed
-          if (msg.type === msgType.MOVE) {
-            this.state.prevData = { x: msg.x, y: msg.y };
-            response = { message: { type: msgType.MOVE_ACK, ...this.state.prevData}, room: this.roomName };
-            this.setState({ currentState: commState.WAITING_MOVE_ACK_ACK });
-          } else if ( msg.type === msgType.PASS ) {
-            response = { message: { type: msgType.PASS_ACK }, room: this.roomName };
-            this.setState({ currentState: commState.WAITING_PASS_ACK_ACK });
-          }
-          break;
-        case commState.WAITING_MOVE_ACK: // player has sent a MOVE msg and waits for acknowledgement
-          if (msg.type === msgType.MOVE_ACK) {
-            if (this.state.prevData.x === msg.x && this.state.prevData.y === msg.y) {
-              response = { message: { type: msgType.MOVE_ACK_ACK, ...this.state.prevData }, room: this.roomName };
-              this.g.processInput(msg.x, msg.y);
-              this.setState({ round: this.state.round + 1, currentState: commState.NONE, currentPlayer: this.g.getCurrentPlayer() });
-            } else {
-              let errmsg = 'Error occured during MOVE_ACK: expected ' + this.state.prevData.toString() + ' but received ' + { x: msg.x, y: msg.y };
-              response = { message: { type: msgType.ERR, errmsg:  errmsg}, room: this.roomName };
-              this.setState({ currentState: commState.NONE });
-            }
-          }
-          break;
-        case commState.WAITING_MOVE_ACK_ACK: // player has sent a MOVE_ACK and waits for acknowledgement
-          if (msg.type === msgType.MOVE_ACK_ACK) {
-            if (this.state.prevData.x === msg.x && this.state.prevData.y === msg.y) {
-              this.g.processInput(msg.x, msg.y);
-              this.setState({ round: this.state.round + 1, currentState: commState.NONE, currentPlayer: this.g.getCurrentPlayer() });
-            } else {
-              let errmsg = 'Error occured during MOVE_ACK_ACK: expected ' + this.state.prevData.toString() + ' but received ' + { x: msg.x, y: msg.y }.toString();
-              response = { message: { type: msgType.ERR, errmsg:  errmsg}, room: this.roomName };
-              this.setState({ currentState: commState.NONE });
-            }
-          }
-          break;
-        case commState.WAITING_PASS_ACK: // player has sent a PASS msg and waits for acknowledgement
-          if(msg.type === msgType.PASS_ACK) {
-            response = { message: { type: msgType.PASS_ACK_ACK }, room: this.roomName };
-            this.g.pass();
-            this.setState({ round: this.state.round + 1, currentState: commState.NONE, currentPlayer: this.g.getCurrentPlayer() });
-          }
-          break;
-        case commState.WAITING_PASS_ACK_ACK: // player has sent a PASS_ACK msg and waits for acknowledgement
-          if(msg.type === msgType.PASS_ACK_ACK) {
-            this.g.pass();
-            this.setState({ round: this.state.round + 1, currentState: commState.NONE, currentPlayer: this.g.getCurrentPlayer() });
-          }
-      }
-      if(response !== null)
-        this.socket.emit('game', response);
-    });
+    this.socket.on('game', this.onMessage);
     this.setState({ loading: false, currentPlayer: this.p1 });
   }
+
+  
+  /**
+   * Game Communication Handler(See Documentation)
+   */
+  onMessage = msg => {
+    if (msg.type === msgType.ERR) { // received an error, exit program
+      console.log(msg);
+      throw Error(msg.errmsg);
+    }
+    let response = null;
+    switch (this.state.currentState) {
+      case commState.NONE: // the current player has made no move nor passed
+        if (msg.type === msgType.MOVE) {
+          this.state.prevData = { x: msg.x, y: msg.y };
+          response = { message: { type: msgType.MOVE_ACK, ...this.state.prevData}, room: this.roomName };
+          this.setState({ currentState: commState.WAITING_MOVE_ACK_ACK });
+        } else if ( msg.type === msgType.PASS ) {
+          response = { message: { type: msgType.PASS_ACK }, room: this.roomName };
+          this.setState({ currentState: commState.WAITING_PASS_ACK_ACK });
+        }
+        break;
+      case commState.WAITING_MOVE_ACK: // player has sent a MOVE msg and waits for acknowledgement
+        if (msg.type === msgType.MOVE_ACK) {
+          if (this.state.prevData.x === msg.x && this.state.prevData.y === msg.y) {
+            response = { message: { type: msgType.MOVE_ACK_ACK, ...this.state.prevData }, room: this.roomName };
+            this.g.processInput(msg.x, msg.y);
+            this.setState({ round: this.state.round + 1, currentState: commState.NONE, currentPlayer: this.g.getCurrentPlayer() });
+          } else {
+            let errmsg = 'Error occured during MOVE_ACK: expected ' + this.state.prevData.toString() + ' but received ' + { x: msg.x, y: msg.y };
+            response = { message: { type: msgType.ERR, errmsg:  errmsg}, room: this.roomName };
+            this.setState({ currentState: commState.NONE });
+          }
+        }
+        break;
+      case commState.WAITING_MOVE_ACK_ACK: // player has sent a MOVE_ACK and waits for acknowledgement
+        if (msg.type === msgType.MOVE_ACK_ACK) {
+          if (this.state.prevData.x === msg.x && this.state.prevData.y === msg.y) {
+            this.g.processInput(msg.x, msg.y);
+            this.setState({ round: this.state.round + 1, currentState: commState.NONE, currentPlayer: this.g.getCurrentPlayer() });
+          } else {
+            let errmsg = 'Error occured during MOVE_ACK_ACK: expected ' + this.state.prevData.toString() + ' but received ' + { x: msg.x, y: msg.y }.toString();
+            response = { message: { type: msgType.ERR, errmsg:  errmsg}, room: this.roomName };
+            this.setState({ currentState: commState.NONE });
+          }
+        }
+        break;
+      case commState.WAITING_PASS_ACK: // player has sent a PASS msg and waits for acknowledgement
+        if(msg.type === msgType.PASS_ACK) {
+          response = { message: { type: msgType.PASS_ACK_ACK }, room: this.roomName };
+          this.g.pass();
+          this.setState({ round: this.state.round + 1, currentState: commState.NONE, currentPlayer: this.g.getCurrentPlayer() });
+        }
+        break;
+      case commState.WAITING_PASS_ACK_ACK: // player has sent a PASS_ACK msg and waits for acknowledgement
+        if(msg.type === msgType.PASS_ACK_ACK) {
+          this.g.pass();
+          this.setState({ round: this.state.round + 1, currentState: commState.NONE, currentPlayer: this.g.getCurrentPlayer() });
+        }
+    }
+    if(response !== null)
+      this.socket.emit('game', response);
+  };
 
    /**
    * 
@@ -184,16 +200,21 @@ class GameWindow extends React.Component {
     let data = { message: { type: msgType.MOVE, x: x, y: y }, room: this.roomName };
     this.setState({ currentState: commState.WAITING_MOVE_ACK, prevData: { x: x, y: y } });
     this.socket.emit('game', data);
-    console.log('send');
-    console.log(this.socket);
-    console.log(data);
   };
 
+
+  /**
+   * passes the move
+   */
   pass = () => {
     this.setState({ currentState: commState.WAITING_PASS_ACK });
     this.socket.emit('game', {message: { type: msgType.PASS }, room: this.roomName });
   };
 
+
+  /**
+   * Player and current game information
+   */
   displayInfo =  () => {
     return (
       <div style={{ display: 'flex', flexGrow: 1 }}>
@@ -207,6 +228,11 @@ class GameWindow extends React.Component {
     );
   }
 
+  
+  /**
+   * Renders a image of flag of given country(default US)
+   * Grabbbed from Profile.jsx
+   */
   renderFlag = (country) => {
     let altText, countryID;
     switch (country) {
@@ -245,6 +271,10 @@ class GameWindow extends React.Component {
     );
   };
 
+
+  /**
+   * displays player information
+   */
   playerInfo = (player) => {
     if(!player)
       return null;
@@ -265,17 +295,26 @@ class GameWindow extends React.Component {
     )
   }
 
+
+  /**
+   * calculates optimal canvas size depending on window size
+   */
   getOptimalCanvasSize = () => {
     const minSize = 300;
     let smallerAxis = window.innerHeight > window.innerLength ? window.innerLength : window.innerHeight;
     return smallerAxis * this.state.boardToScreenRatio > minSize ? smallerAxis * this.state.boardToScreenRatio : minSize;
   }
 
+
+  /**
+   * resize handler
+   */
   onResize = () => {
     let newSize = this.getOptimalCanvasSize();
     this.g.setCanvasSize(newSize);
   }
 
+  
   render() {
     if(this.state.loading)
       return null;
