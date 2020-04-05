@@ -63,9 +63,10 @@ class GameWindow extends React.Component {
       loading: true,
       currentState: commState.NONE,
       prevData: { x: NaN, y: NaN },
-      boardToScreenRatio: 0.3 ,
+      boardToScreenRatio: 0.5 ,
       round: 1,
       viewmode: 0,
+      chatbuffer: [],
     };
   }
 
@@ -239,6 +240,11 @@ class GameWindow extends React.Component {
     console.log(state);
   }
 
+  err = (state) => {
+    alert('An Error occured on Game Board');
+    console.log(state);
+  }
+
   
   /**
    * Renders a image of flag of given country(default US)
@@ -377,7 +383,9 @@ class GameWindow extends React.Component {
           <div className='boardview'>
             {this.game}
           </div>
-          {this.chatbox()}
+          <div style={{ flexGrow: '1' , flexBasis: 'auto', width: CHATBOXWIDTH, height: CHATBOXHEIGHT, display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: this.state.viewmode === 0 ? 'flex-start' :  'center', margin:'20px' }}>
+            {this.chatbox()}
+          </div>
           <div className='player-info-box-h'>
             {this.playerInfo(this.p1)}
             {this.playerInfo(this.p2)}
@@ -388,8 +396,8 @@ class GameWindow extends React.Component {
 
   chatbox = () => {
     return (
-      <div style={{ flexGrow: '1' , flexBasis: 'auto', width: CHATBOXWIDTH, height: CHATBOXHEIGHT, display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: this.state.viewmode === 0 ? 'flex-start' :  'center', margin:'20px' }}>
-        <div style={{ backgroundColor: 'grey', borderRadius: '10px', width: CHATBOXWIDTH, height: CHATBOXHEIGHT }}></div>
+      <div style={{ backgroundColor: 'grey', borderRadius: '10px', width: CHATBOXWIDTH, height: CHATBOXHEIGHT }}>
+
       </div>
     )
   }

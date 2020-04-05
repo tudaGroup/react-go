@@ -320,7 +320,6 @@ h6 {
 
 .player-info-box-h {
   display: flex;
-  flex-basis: 100%;
   justify-content: center;
   align-items: center;
   align-content: center;
