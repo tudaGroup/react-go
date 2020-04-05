@@ -7,12 +7,13 @@ import { Stage, Layer, Rect, Circle, Line, Group } from 'react-konva';
 class Game extends Component {
   /**
    *
-   * @param {number}   props.boardSize - sets the size of the board during the game
-   * @param {Player}   props.player1   - Player 1
-   * @param {Player}   props.player2   - Player 2
-   * @param {Player}   props.ownPlayer - Player that is controlling
-   * @param {function} props.broadcast - broadcast function
-   * @param {Boolean}  props.multi     - boolean value whether game is in multiplayermode
+   * @param {number}   props.boardSize  - sets the size of the board during the game
+   * @param {Player}   props.player1    - Player 1
+   * @param {Player}   props.player2    - Player 2
+   * @param {Player}   props.ownPlayer  - Player that is controlling
+   * @param {function} props.broadcast  - broadcast function
+   * @param {Boolean}  props.multi      - boolean value whether game is in multiplayermode
+   * @param {Number}   props.canvasSize - canvas size of board
    */
   constructor(props) {
     super(props);
@@ -34,7 +35,8 @@ class Game extends Component {
         initState,
         this.props.player1
       ),
-      gameEnd: false
+      gameEnd: false,
+      canvasSize: this.props.boardHW
     };
   }
 
@@ -54,46 +56,28 @@ class Game extends Component {
         this.state.history[this.state.round].passCount
     );
     return (
-      <div>
-        {/*<button onClick={() => this.undo(1)}>{'Undo'}</button>*/null}
-        {/*<button onClick={() => this.redo(1)}>{'Redo'}</button>*/null}
-        <button onClick={() => this.handlePass()}>{'Pass'}</button>
-        {this.state.gameEnd ? (
-          <h1 style={{ color: 'white' }}>
-            Game has ended!{' '}
-            {this.state.history[this.state.round].gameState.points
-              .player1score >
-            this.state.history[this.state.round].gameState.points.player2score
-              ? this.props.player1.props.name + ' won!'
-              : this.state.history[this.state.round].gameState.points
-                  .player1score ===
-                this.state.history[this.state.round].gameState.points
-                  .player2score
-              ? 'It is a draw!'
-              : this.props.player2.props.name + 'won!'}
-          </h1>
-        ) : null}
-        <h1 style={{ color: 'white' }}>
-          {'passCount = ' + this.state.history[this.state.round].passCount}
-        </h1>
-        <h1 style={{ color: 'white' }}>
-          {'' +
-            this.props.player1.props.name +
-            ':' +
-            this.state.history[this.state.round].gameState.points.player1score +
-            ', ' +
-            this.props.player2.props.name +
-            ': ' +
-            this.state.history[this.state.round].gameState.points.player2score}
-        </h1>
-        <Board
-          boardSize={this.props.boardSize}
-          onClick={(x, y) => this.handleClick(x, y)}
-          currField={current.gameState.field}
-          currPlayer={this.state.currPlayer}
-        />
-      </div>
+      <Board
+        boardSize={this.props.boardSize}
+        onClick={(x, y) => this.handleClick(x, y)}
+        currField={current.gameState.field}
+        currPlayer={this.state.currPlayer}
+        boardHW={this.state.canvasSize}
+      />
     );
+  }
+
+  setCanvasSize(size) {
+    this.setState({
+      canvasSize: size 
+    });
+  }
+
+  getCurrentPlayer() {
+    return this.state.currPlayer;
+  }
+  
+  getRound() {
+    return this.state.round;
   }
 
   /**
@@ -128,7 +112,8 @@ class Game extends Component {
   }
 
   handlePass() {
-    console.log('pass init')
+    if ((this.props.multi && this.props.ownPlayer !== this.state.currPlayer) || this.state.gameEnd)
+      return;
     this.props.pass();
   }
 
@@ -486,23 +471,19 @@ class Board extends Component {
    */
 
   render() {
-    let boardHW =
-      window.innerHeight < window.innerWidth
-        ? window.innerHeight
-        : window.innerWidth;
+    let boardHW = this.props.boardHW;
     let boardSize = this.props.boardSize;
     let fieldSize = boardHW / boardSize;
     let moveMade = this.props.onClick;
     let field = this.props.currField;
     let currPlayer = this.props.currPlayer;
     return (
-      <div>
         <Stage width={boardHW} height={boardHW}>
           <Layer>
             <Rect
               width={boardHW}
               height={boardHW}
-              fill='#caa672'
+              fill='#ffc059'
               shadowBlur={10}
             />
             {field.map(function(who, i) {
@@ -526,7 +507,6 @@ class Board extends Component {
             })}
           </Layer>
         </Stage>
-      </div>
     );
   }
 }
@@ -614,13 +594,6 @@ class Field extends Component {
  * state.availableMoves
  */
 class Player extends Component {
-  render() {
-    return (
-      <div>
-        <h1>{this.props.name}</h1>
-      </div>
-    );
-  }
 }
 
 // Warn if overriding existing method
