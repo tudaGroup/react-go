@@ -129,7 +129,7 @@ class GameWindow extends React.Component {
     this.un = localStorage.getItem('username');
     this.ownPlayer = this.p1.props.name === this.un ? this.p1 : this.p2;
     let canvassize = this.getNewCanvasSize();
-    this.game  = <Game ref={ game => this.g = game } boardSize={gameData.data.size} player1={this.p1} player2={this.p2} ownPlayer={this.ownPlayer} boardHW={canvassize} broadcast={this.broadcastMove.bind(this)} pass={this.pass} multi={true}/>;
+    this.game  = <Game ref={ game => this.g = game } boardSize={gameData.data.size} player1={this.p1} player2={this.p2} ownPlayer={this.ownPlayer} boardHW={canvassize} broadcast={this.broadcastMove.bind(this)} err={this.err} pass={this.pass} multi={true}/>;
 
     window.addEventListener('resize', this.onResize);
 
@@ -232,6 +232,11 @@ class GameWindow extends React.Component {
           <div>Round {this.state.round}</div>
       </div>
     )
+  }
+  
+  err = (state) => {
+    alert('An Error occured on Game Board');
+    console.log(state);
   }
 
   
