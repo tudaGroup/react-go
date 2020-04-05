@@ -63,9 +63,10 @@ class GameWindow extends React.Component {
       loading: true,
       currentState: commState.NONE,
       prevData: { x: NaN, y: NaN },
-      boardToScreenRatio: 0.3 ,
+      boardToScreenRatio: 0.5 ,
       round: 1,
       viewmode: 0,
+      chatbuffer: [],
     };
   }
 
@@ -129,7 +130,7 @@ class GameWindow extends React.Component {
     this.un = localStorage.getItem('username');
     this.ownPlayer = this.p1.props.name === this.un ? this.p1 : this.p2;
     let canvassize = this.getNewCanvasSize();
-    this.game  = <Game ref={ game => this.g = game } boardSize={gameData.data.size} player1={this.p1} player2={this.p2} ownPlayer={this.ownPlayer} boardHW={canvassize} broadcast={this.broadcastMove.bind(this)} pass={this.pass} multi={true}/>;
+    this.game  = <Game ref={ game => this.g = game } boardSize={gameData.data.size} player1={this.p1} player2={this.p2} ownPlayer={this.ownPlayer} boardHW={canvassize} broadcast={this.broadcastMove.bind(this)} err={this.err} pass={this.pass} multi={true}/>;
 
     window.addEventListener('resize', this.onResize);
 
@@ -232,6 +233,10 @@ class GameWindow extends React.Component {
           <div>Round {this.state.round}</div>
       </div>
     )
+  }
+
+  err = () => {
+    alert('An Error occured on Game Board');
   }
 
   
@@ -372,7 +377,9 @@ class GameWindow extends React.Component {
           <div className='boardview'>
             {this.game}
           </div>
-          {this.chatbox()}
+          <div style={{ flexGrow: '1' , flexBasis: 'auto', width: CHATBOXWIDTH, height: CHATBOXHEIGHT, display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: this.state.viewmode === 0 ? 'flex-start' :  'center', margin:'20px' }}>
+            {this.chatbox()}
+          </div>
           <div className='player-info-box-h'>
             {this.playerInfo(this.p1)}
             {this.playerInfo(this.p2)}
@@ -383,8 +390,8 @@ class GameWindow extends React.Component {
 
   chatbox = () => {
     return (
-      <div style={{ flexGrow: '1' , flexBasis: 'auto', width: CHATBOXWIDTH, height: CHATBOXHEIGHT, display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: this.state.viewmode === 0 ? 'flex-start' :  'center', margin:'20px' }}>
-        <div style={{ backgroundColor: 'grey', borderRadius: '10px', width: CHATBOXWIDTH, height: CHATBOXHEIGHT }}></div>
+      <div style={{ backgroundColor: 'grey', borderRadius: '10px', width: CHATBOXWIDTH, height: CHATBOXHEIGHT }}>
+
       </div>
     )
   }
