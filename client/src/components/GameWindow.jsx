@@ -235,8 +235,9 @@ class GameWindow extends React.Component {
     )
   }
 
-  err = () => {
+  err = (state) => {
     alert('An Error occured on Game Board');
+    console.log(state);
   }
 
   
