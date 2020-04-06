@@ -53,6 +53,10 @@ io.on('connection', socket => {
   socket.on('game', data => {
     io.to(data.room).emit('game', data.message);
   });
+
+  socket.on('chat', data => {
+    io.to(data.room).emit('chat', data.data);
+  })
   
   socket.on('disconnect', () => {
     console.log(username  + ' logged out');

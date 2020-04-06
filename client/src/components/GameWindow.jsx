@@ -4,7 +4,7 @@ import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
 import { Game, Player } from './BoardComponents';
-import { Layout, Row, Col } from 'antd';
+import { Layout, Row, Col, Button } from 'antd';
 import 'antd/dist/antd.css';
 
 
@@ -67,6 +67,7 @@ class GameWindow extends React.Component {
       round: 1,
       viewmode: 0,
       chatbuffer: [],
+      stringbuffer: '',
     };
   }
 
@@ -135,16 +136,23 @@ class GameWindow extends React.Component {
     window.addEventListener('resize', this.onResize);
 
     
-    this.socket.on('game', this.onMessage);
+    this.socket.on('game', this.onGameComm);
+    this.socket.on('chat', this.onChatMsg)
     this.setState({ loading: false, currentPlayer: this.p1, canvasSize: canvassize });
     this.setOptimalViewMode();
   }
 
   
+  onChatMsg = (msg) => {
+    let newBuffer = this.state.chatbuffer.slice();
+    newBuffer.push(msg);
+    this.setState({ chatbuffer: newBuffer })
+  }
+
   /**
    * Game Communication Handler(See Documentation)
    */
-  onMessage = msg => {
+  onGameComm = msg => {
     if (msg.type === msgType.ERR) { // received an error, exit program
       console.log(msg);
       throw Error(msg.errmsg);
@@ -224,6 +232,17 @@ class GameWindow extends React.Component {
   };
 
 
+  handleInputKP = (e) => {
+    if(e.key === 'Enter') {
+      this.sendMessage();
+    }
+  }
+
+  sendMessage = () => {
+    if(this.state.stringbuffer.length > 0)
+      this.socket.emit('chat', { data: {user: this.un, msg: this.state.stringbuffer}, room: this.roomName });
+    this.setState({ stringbuffer: '' });
+  }
 
 
   gameInfo = () => {
@@ -366,11 +385,32 @@ class GameWindow extends React.Component {
   contentView = () => {
     let newHeight = this.state.canvasSize * 0.7;
     return(
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div
+        style={
+          {
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }
+        }
+      >
         <div ref={el => this.gameView = el} className='boardview'>
           {this.game}
         </div>
-        <div ref={el => this.infoview = el} style={{ height: `${this.state.canvasSize * 0.7}`, margin: '30px', display: 'flex', flexWrap: 'wrap', flexDirection: 'column', alignContent: 'center', alignItems: 'center', justifyContent: 'center', padding: '20px', backgroundColor: '#262320', borderRadius: '10px'  }}>
+        <div ref={el => this.infoview = el} 
+          style={{
+            margin: '30px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignContent: 'center',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            backgroundColor: '#262320',
+            borderRadius: '10px',
+            height: `${this.state.canvasSize * 0.7}px`
+        }}>
           {this.displayInfo()}
           {this.chatbox()}
         </div>
@@ -379,14 +419,100 @@ class GameWindow extends React.Component {
   }
 
   chatbox = () => {
+    console.log(this.state.chatbuffer); 
     return (
-      <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column', alignItems: 'center', width: '100%', margin: '20px', minHeight: '300px'  }}>
-        <div style={{ display: 'flex', flexGrow: 1, alignItems: 'center', width: '100%' }}>
-          <div style={{ backgroundColor: 'grey', flexGrow: 1, flexBasis: 'auto', borderRadius: '10px', height: '100%', margin: '20px' }}>
-
+      <div 
+        style={{ 
+          display: 'flex',
+          flexGrow: 1,
+          flexShrink: '1',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100%',
+          margin: '20px',
+          minHeight: '300px',
+          height: 'fit-content',
+          overflow: 'hidden',
+          padding: '20px'
+          }
+      }>
+        <div 
+          style={{ 
+            display: 'flex',
+            flexGrow: 1,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            width: '100%',
+            borderRadius: '10px',
+            height: '100%',
+            overflow: 'hidden'
+          }
+        }>
+          <div
+            style={{ 
+              backgroundColor: 'grey', 
+            flexBasis: '100%',
+            height: '85%',
+            marginBottom: '0',
+            fontSize: '15px',
+            color: 'white',
+            padding: '12px',
+            overflow: 'auto'
+          }}>
+            {this.state.chatbuffer.map(msg => {
+              return (
+                <p>
+                  {this.displayMsg(msg)}
+                </p>
+              )
+            })}
+          </div>
+          <div 
+            style={{ 
+              display: 'flex',
+              backgroundColor: 'grey',
+              height: '15%',
+              width: '100%',
+              padding: '5px'
+          }}>
+            <input 
+              style={{ display: 'block', 
+                       backgroundColor: '#f0f0f0', 
+                       flexGrow: 1, height: '100%', 
+                       borderRadius: '10px', 
+                       fontSize: '15px', 
+                       marginRight: '10px', 
+                       border: 0, 
+                       paddingLeft: '10px', 
+                       paddingRight: '10px',
+                       color : '#262320',
+                       overflow: 'auto' }}
+              value={this.state.stringbuffer}
+              onChange={e => this.setState({ stringbuffer: e.target.value })}
+              onKeyPress={e => this.handleInputKP(e)}
+            />
+            <Button 
+              style={{ 
+                width: 'auto',
+                backgroundColor: '#59afff',
+                height: '100%',
+                borderRadius: '10px',
+                color: 'white',
+                border: 0 
+            }}
+            onClick={this.sendMessage}
+            >
+              Send
+            </Button>
           </div>
         </div>
       </div>
+    )
+  }
+
+  displayMsg = (msg) => {
+    return(
+      <div>[{msg.user}]: {msg.msg}</div>
     )
   }
 
@@ -405,7 +531,12 @@ class GameWindow extends React.Component {
    */
   displayInfo =  () => {
     return (
-      <div style={{ display: 'flex', alignContent: 'space-between', width: '100%' }}>
+      <div 
+        	style={{ 
+            display: 'flex',
+            alignContent: 'space-between',
+            width: '100%'
+      }}>
         {this.playerInfo(this.p1)}
         {this.gameInfo()}
         {this.playerInfo(this.p2)}
