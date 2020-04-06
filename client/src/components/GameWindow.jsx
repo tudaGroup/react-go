@@ -63,7 +63,7 @@ class GameWindow extends React.Component {
       loading: true,
       currentState: commState.NONE,
       prevData: { x: NaN, y: NaN },
-      boardToScreenRatio: 0.5 ,
+      boardToScreenRatio: 0.85 ,
       round: 1,
       viewmode: 0,
       chatbuffer: [],
@@ -348,7 +348,12 @@ class GameWindow extends React.Component {
    * calculates optimal canvas size depending on window size
    */
   getNewCanvasSize = () => {
-    return window.innerWidth * this.state.boardToScreenRatio > 400 ? window.innerWidth * this.state.boardToScreenRatio : 400;
+    let smallerAxis = window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth;
+    if(this.gameView && this.infoview) {
+      if(this.gameView.getBoundingClientRect().top < this.infoview.getBoundingClientRect().top)
+        this.setState({ boardToScreenRatio: 0.85 });
+    }
+    return smallerAxis * this.state.boardToScreenRatio > 400 ? smallerAxis * this.state.boardToScreenRatio : 400;
   }
 
   setOptimalViewMode = () => {
@@ -359,40 +364,28 @@ class GameWindow extends React.Component {
   }
 
   contentView = () => {
-    if(this.state.viewmode == 0)
-      return (
-        <div className='gamewindow-contentview'>
-          <div className='player-info-box-v'>
-            {this.playerInfo(this.p1)}
-            {this.playerInfo(this.p2)}
-          </div>
-          <div className='boardview'>
-            {this.game}
-          </div>
+    let newHeight = this.state.canvasSize * 0.7;
+    return(
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div ref={el => this.gameView = el} className='boardview'>
+          {this.game}
+        </div>
+        <div ref={el => this.infoview = el} style={{ height: `${this.state.canvasSize * 0.7}`, margin: '30px', display: 'flex', flexWrap: 'wrap', flexDirection: 'column', alignContent: 'center', alignItems: 'center', justifyContent: 'center', padding: '20px', backgroundColor: '#262320', borderRadius: '10px'  }}>
+          {this.displayInfo()}
           {this.chatbox()}
         </div>
-      );
-    else
-      return (
-        <div className='gamewindow-contentview'>
-          <div className='boardview'>
-            {this.game}
-          </div>
-          <div style={{ flexGrow: '1' , flexBasis: 'auto', width: CHATBOXWIDTH, height: CHATBOXHEIGHT, display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: this.state.viewmode === 0 ? 'flex-start' :  'center', margin:'20px' }}>
-            {this.chatbox()}
-          </div>
-          <div className='player-info-box-h'>
-            {this.playerInfo(this.p1)}
-            {this.playerInfo(this.p2)}
-          </div>
-        </div>
-      )
+      </div>
+    )
   }
 
   chatbox = () => {
     return (
-      <div style={{ backgroundColor: 'grey', borderRadius: '10px', width: CHATBOXWIDTH, height: CHATBOXHEIGHT }}>
+      <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column', alignItems: 'center', width: '100%', margin: '20px', minHeight: '300px'  }}>
+        <div style={{ display: 'flex', flexGrow: 1, alignItems: 'center', width: '100%' }}>
+          <div style={{ backgroundColor: 'grey', flexGrow: 1, flexBasis: 'auto', borderRadius: '10px', height: '100%', margin: '20px' }}>
 
+          </div>
+        </div>
       </div>
     )
   }
@@ -404,8 +397,7 @@ class GameWindow extends React.Component {
   onResize = () => {
     let newSize = this.getNewCanvasSize();
     this.setState({ canvasSize: newSize });
-    this.setOptimalViewMode();
-    this.g.setCanvasSize(newSize);
+    if(this.g) this.g.setCanvasSize(newSize);
   }
 
   /**
@@ -413,7 +405,7 @@ class GameWindow extends React.Component {
    */
   displayInfo =  () => {
     return (
-      <div style={{ display: 'flex', flexGrow: 1, alignContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignContent: 'space-between', width: '100%' }}>
         {this.playerInfo(this.p1)}
         {this.gameInfo()}
         {this.playerInfo(this.p2)}
@@ -438,7 +430,7 @@ class GameWindow extends React.Component {
     if(this.state.loading)
       return null;
     return (
-      <div className='main'>
+      <div className='gameView'>
           <div className='gamewindow-header'>
             <div style={{ padding: '5px' }}>
               <img src={process.env.PUBLIC_URL + '/ReactGo.png'} />
