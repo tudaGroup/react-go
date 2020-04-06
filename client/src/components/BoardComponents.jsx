@@ -106,7 +106,7 @@ class Game extends Component {
    * @param {integer} y - y coordinate of the clicked Field
    */
   handleClick(x, y) {
-    if ((this.props.multi && this.props.ownPlayer !== this.state.currPlayer) || this.state.gameEnd)
+    if ((this.props.multi && this.props.ownPlayer !== this.state.currPlayer) || this.state.gameEnd || !this.state.availableMoves[y * this.props.boardSize + x]  )
       return;
     this.props.broadcast(x, y);
   }
@@ -119,7 +119,10 @@ class Game extends Component {
 
 
   processInput(x, y) {
-    if (!this.state.availableMoves[y * this.props.boardSize + x]) this.props.err(this.state);
+    if (!this.state.availableMoves[y * this.props.boardSize + x]) {
+      this.props.err(this.state);
+      return;
+    }
     this.onNextMove(this.state.availableMoves[y * this.props.boardSize + x]);
   }
 
