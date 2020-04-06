@@ -28,6 +28,21 @@ export default class Clock extends Component {
     }, 1000);
   }
 
+  componentDidUpdate(prevProps) {
+    const { seconds, minutes } = this.state;
+    if (prevProps.isActive && !this.props.isActive) {
+      const incremented = seconds + this.props.increment;
+      if (incremented < 60) {
+        this.setState({ seconds: incremented });
+      } else {
+        this.setState({
+          minutes: minutes + 1,
+          seconds: incremented % 60,
+        });
+      }
+    }
+  }
+
   componentWillUnmount() {
     clearInterval(this.interval);
   }
