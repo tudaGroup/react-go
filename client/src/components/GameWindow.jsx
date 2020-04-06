@@ -139,7 +139,6 @@ class GameWindow extends React.Component {
     this.socket.on('game', this.onGameComm);
     this.socket.on('chat', this.onChatMsg)
     this.setState({ loading: false, currentPlayer: this.p1, canvasSize: canvassize });
-    this.setOptimalViewMode();
   }
 
   
@@ -232,12 +231,19 @@ class GameWindow extends React.Component {
   };
 
 
+  /**
+   * handles a key press while chat input is focused
+   */
   handleInputKP = (e) => {
     if(e.key === 'Enter') {
       this.sendMessage();
     }
   }
 
+
+  /**
+   * formats and sends message over socket {data: {user: #username of the sending person, msg: #message to be sent}, room: #room name of current gameWindow}
+   */
   sendMessage = () => {
     if(this.state.stringbuffer.length > 0)
       this.socket.emit('chat', { data: {user: this.un, msg: this.state.stringbuffer}, room: this.roomName });
@@ -245,6 +251,9 @@ class GameWindow extends React.Component {
   }
 
 
+  /**
+   * display game info
+   */
   gameInfo = () => {
     return (
       <div className='infobox' style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -254,6 +263,9 @@ class GameWindow extends React.Component {
     )
   }
 
+  /**
+   * error handler for child components
+   */
   err = (state) => {
     alert('An Error occured on Game Board');
     console.log(state);
@@ -375,13 +387,10 @@ class GameWindow extends React.Component {
     return smallerAxis * this.state.boardToScreenRatio > 400 ? smallerAxis * this.state.boardToScreenRatio : 400;
   }
 
-  setOptimalViewMode = () => {
-    if(window.innerWidth - (this.state.canvasSize + INFOBOXWIDTH + CHATBOXWIDTH + 6 * MARGIN) >= 0) 
-      this.setState({ viewmode: 0 });
-    else
-      this.setState({ viewmode: 1 });
-  }
 
+  /**
+   * renders the content view(the board and the info / chat)
+   */
   contentView = () => {
     let newHeight = this.state.canvasSize * 0.7;
     return(
@@ -418,6 +427,9 @@ class GameWindow extends React.Component {
     )
   }
 
+  /**
+   * renders the chatbox
+   */
   chatbox = () => {
     console.log(this.state.chatbuffer); 
     return (
@@ -476,17 +488,7 @@ class GameWindow extends React.Component {
               padding: '5px'
           }}>
             <input 
-              style={{ display: 'block', 
-                       backgroundColor: '#f0f0f0', 
-                       flexGrow: 1, height: '100%', 
-                       borderRadius: '10px', 
-                       fontSize: '15px', 
-                       marginRight: '10px', 
-                       border: 0, 
-                       paddingLeft: '10px', 
-                       paddingRight: '10px',
-                       color : '#262320',
-                       overflow: 'auto' }}
+              className='chatInput'
               value={this.state.stringbuffer}
               onChange={e => this.setState({ stringbuffer: e.target.value })}
               onKeyPress={e => this.handleInputKP(e)}
