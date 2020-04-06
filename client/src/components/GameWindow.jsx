@@ -448,11 +448,15 @@ class GameWindow extends React.Component {
               />
             </div>
           </Col>
-          <Clock
-            playing={player.props.name === this.state.currentPlayer.props.name}
-            startTime={this.state.time}
-            increment={this.state.increment}
-          />
+          <Col>
+            <Clock
+              isActive={
+                player.props.name === this.state.currentPlayer.props.name
+              }
+              startTime={this.state.time}
+              increment={this.state.increment}
+            />
+          </Col>
         </Row>
       </div>
     );

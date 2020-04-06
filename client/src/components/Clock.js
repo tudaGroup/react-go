@@ -1,12 +1,42 @@
-import React, { useState } from 'react';
-import { Layout, Row, Col } from 'antd';
+import React, { Component } from 'react';
 
-const Clock = (playing, startTime, increment) => {
-  const [minutes, setMinutes] = useState(startTime);
-  const [seconds, setSeconds] = useState(0);
+export default class Clock extends Component {
+  state = {
+    minutes: 3,
+    seconds: 0,
+  };
 
-  const renderTimeDisplay = () => {};
-  return <Col>00:00</Col>;
-};
+  pad(num) {
+    return num < 10 ? '0' + num : num;
+  }
 
-export default Clock;
+  componentDidMount() {
+    this.interval = setInterval(() => {
+      const { seconds, minutes } = this.state;
+      if (seconds > 0) {
+        this.setState({ seconds: seconds - 1 });
+      }
+      if (seconds === 0) {
+        if (minutes === 0) {
+          clearInterval(this.interval);
+        } else {
+          this.setState({ minutes: minutes - 1, seconds: 59 });
+        }
+      }
+    }, 1000);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.interval);
+  }
+
+  render() {
+    const { minutes, seconds } = this.state;
+
+    return (
+      <div>
+        {this.pad(minutes)}:{this.pad(seconds)}
+      </div>
+    );
+  }
+}
