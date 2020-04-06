@@ -49,11 +49,18 @@ export default class Clock extends Component {
 
   render() {
     const { minutes, seconds } = this.state;
-
-    return (
-      <div>
-        {this.pad(minutes)}:{this.pad(seconds)}
-      </div>
-    );
+    if (this.props.isActive) {
+      return (
+        <div style={{ backgroundColor: '#629923', padding: ' 0 15px' }}>
+          {this.pad(minutes)}:{this.pad(seconds)}
+        </div>
+      );
+    } else {
+      return (
+        <div style={{ padding: ' 0 15px' }}>
+          {this.pad(minutes)}:{this.pad(seconds)}
+        </div>
+      );
+    }
   }
 }
