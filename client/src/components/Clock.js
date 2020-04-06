@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 
 export default class Clock extends Component {
   state = {
-    minutes: 3,
+    minutes: this.props.startTime,
     seconds: 0,
   };
 
@@ -13,14 +13,16 @@ export default class Clock extends Component {
   componentDidMount() {
     this.interval = setInterval(() => {
       const { seconds, minutes } = this.state;
-      if (seconds > 0) {
-        this.setState({ seconds: seconds - 1 });
-      }
-      if (seconds === 0) {
-        if (minutes === 0) {
-          clearInterval(this.interval);
-        } else {
-          this.setState({ minutes: minutes - 1, seconds: 59 });
+      if (this.props.isActive) {
+        if (seconds > 0) {
+          this.setState({ seconds: seconds - 1 });
+        }
+        if (seconds === 0) {
+          if (minutes === 0) {
+            clearInterval(this.interval);
+          } else {
+            this.setState({ minutes: minutes - 1, seconds: 59 });
+          }
         }
       }
     }, 1000);
