@@ -29,12 +29,12 @@ var onlinePlayers = [];
 // Socket.IO
 io.on('connection', socket => {
   console.log('New client connected');
-  var username;
-  
+  socket.username = '';
+  socket.customRooms = [];
   socket.emit('challenges', getChallenges()); // Send challenges to new client
 
   // sets username for socket connection(later to be used for deleting all challenges from this user)
-  socket.on('online', name => {username = name; console.log(username + ' online')});
+  socket.on('online', name => {socket.username = name; console.log(socket.username + ' online')});
 
   socket.on('updateChallenges', data => {
     // Update list of challenges when a new one is created
@@ -47,7 +47,23 @@ io.on('connection', socket => {
   });
 
   socket.on('joinGame', room => {
-    socket.join(room);
+    socket.join(room, () => {
+      socket.customRooms.push(room);
+      let players = room.split('-');
+      let player1join = false;
+      let player2join = false;
+      let clientsInRoom = Object.keys(socket.adapter.rooms[room].sockets);
+      for (let i = 0; i < clientsInRoom.length; i++){
+        if (io.sockets.connected[clientsInRoom[i]].username == players[0])
+          player1join = true;
+        if (io.sockets.connected[clientsInRoom[i]].username == players[1])
+          player2join = true;
+      }
+      if(player1join && player2join && (socket.username === players[0] || socket.username === players[1])) {
+        io.in(room).emit('system', { type: 'CONNECTION_ESTABLISHED'})
+      }
+      socket.to(room).emit('system', { type: 'JOIN', user: socket.username });
+    })
   });
 
   socket.on('game', data => {
@@ -59,21 +75,26 @@ io.on('connection', socket => {
   })
   
   socket.on('disconnect', () => {
-    console.log(username  + ' logged out');
+    console.log(socket.username  + ' disconnected');
     let filteredChallenges = getChallenges().filter(
-      challenge => challenge.name !== username
+      challenge => challenge.name !== socket.username
     );
-    
+    console.log(socket.username + '´s rooms');
+    console.log(socket.customRooms);
+
+    for (let i = 0; i < socket.customRooms.length; i++) {
+      let room = socket.customRooms[i];
+      io.to(room).emit('system', { type: 'DISCONNECT', user: socket.username })
+    }
+
     setChallenges(filteredChallenges);
-    console.log(filteredChallenges);
-    console.log(getChallenges());
     io.emit('challenges', getChallenges());
     socket.disconnect();
   });
 
   socket.on('logout', () => {
     let filteredChallenges = getChallenges().filter(
-      challenge => challenge.name !== username
+      challenge => challenge.name !== socket.username
     );
     setChallenges(filteredChallenges);
     io.emit('challenges', getChallenges());

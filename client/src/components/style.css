@@ -345,13 +345,43 @@ h6 {
   display: block; 
   background-color: #f0f0f0; 
   flex-grow: 1;
-  height: 100%; 
-  border-radius: 10px; 
-  font-size: 15px; 
-  margin-right: 10px; 
+  height: auto; 
+  border-radius: 10px;
+  margin: 2.5px;
+  margin-top: 0;
   border: 0; 
   padding-left: 10px; 
   padding-right: 10px;
   color : #262320;
   overflow: auto
+}
+
+.chatboxbutton {
+  width: auto;
+  margin: 2.5px;
+  margin-top: 0;
+  background-color: #1a5ee8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: auto;
+  border-radius: 5px;
+  border: 0;
+  color: white;
+}
+
+.close {
+  background-color: white;
+  height: fit-content;
+  float: right;
+  width: fit-content;
+  opacity: 0.5;
+  border: 0;
+  font-size: 17px;
+  text-decoration: underline;
+  color: #333;
+}
+
+.close:hover {
+  opacity: 1;
 }

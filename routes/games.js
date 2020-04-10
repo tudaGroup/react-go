@@ -56,8 +56,8 @@ router.get('/games/:player', auth, async (req, res) => {
   }).sort({ _id: -1 });
 
   let wins = games.filter(game => {
-    (game.player1 === player && player1Won) ||
-      (game.player1 !== player && !player1Won);
+    (game.player1 === player && game.player1Won) ||
+      (game.player1 !== player && !game.player1Won);
   }).length;
   let losses = games.length - wins;
   res.send({ games, wins, losses });

@@ -36,13 +36,11 @@ class Game extends Component {
         this.props.player1
       ),
       gameEnd: false,
+      winner: null,
       canvasSize: this.props.boardHW
     };
   }
 
-  getHistory() {
-    return this.state.history;
-  }
 
   render() {
     const history = this.state.history;
@@ -56,6 +54,10 @@ class Game extends Component {
         this.state.history[this.state.round].passCount
     );
     return (
+      <div>
+      passCount: {this.state.history[this.state.round].passCount}, 
+      currPlayer: {this.state.currPlayer.props.name}, 
+      gameEnd: {`${this.state.gameEnd}`}
       <Board
         boardSize={this.props.boardSize}
         onClick={(x, y) => this.handleClick(x, y)}
@@ -63,6 +65,7 @@ class Game extends Component {
         currPlayer={this.state.currPlayer}
         boardHW={this.state.canvasSize}
       />
+      </div>
     );
   }
 
@@ -72,12 +75,41 @@ class Game extends Component {
     });
   }
 
+
+  setImmediateWin(player) {
+    this.setState({ winner: player, gameEnd: true });
+    this.evalResult();
+  }
+
+
+  /**
+   * score rating system(stone scoring)
+   * @param {Field} field - field to be evaluated scores for
+   */
+  getPoints(field) {
+    let player1score = this.getSpotsOf(field, this.props.player1).length;
+    let player2score = this.getSpotsOf(field, this.props.player2).length;
+    return { player1score: player1score, player2score: player2score };
+  }
+
+  
+  getHistory() {
+    return this.state.history;
+  }
+
   getCurrentPlayer() {
     return this.state.currPlayer;
   }
   
   getRound() {
     return this.state.round;
+  }
+
+  evalResult() {
+    if(this.state.winner !== null)
+      this.props.win(this.state.winner);
+    else
+      this.props.draw();
   }
 
   /**
@@ -108,15 +140,16 @@ class Game extends Component {
   handleClick(x, y) {
     if ((this.props.multi && this.props.ownPlayer !== this.state.currPlayer) || this.state.gameEnd || !this.state.availableMoves[y * this.props.boardSize + x]  )
       return;
+    this.processInput(x, y);
     this.props.broadcast(x, y);
   }
 
   handlePass() {
     if ((this.props.multi && this.props.ownPlayer !== this.state.currPlayer) || this.state.gameEnd)
       return;
+    this.pass()
     this.props.pass();
   }
-
 
   processInput(x, y) {
     if (!this.state.availableMoves[y * this.props.boardSize + x]) {
@@ -316,15 +349,6 @@ class Game extends Component {
     return res;
   }
 
-  /**
-   * score rating system(stone scoring)
-   * @param {Field} field - field to be evaluated scores for
-   */
-  getPoints(field) {
-    let player1score = this.getSpotsOf(field, this.props.player1).length;
-    let player2score = this.getSpotsOf(field, this.props.player2).length;
-    return { player1score: player1score, player2score: player2score };
-  }
 
   applyRulesBoard(field, player) {
     const enemy =
@@ -395,7 +419,7 @@ class Game extends Component {
   }
 
   /**
-   * Search algorithm(DFS) for an empty spot, if empty spot is not found player loses his stones in alreadySearchedPositions(not fully implemented yet, coming soon)
+   * Search algorithm(DFS) for an empty spot, if empty spot is not found player loses his stones in alreadySearchedPositions
    * @param   {Array<[integer, integer]>} arrayOfPos               - adjacent Positions that need to be searched
    * @param   {Array<[integer, integer]>} alreadySearchedPositions - Positions that has already been searchde
    * @returns {Array<[Boolean, Points]>}  return boolean value whether an empty field was found, along with every stone on the search path
@@ -446,18 +470,30 @@ class Game extends Component {
   }
 
   updateGame(newState) {
+    let whoIsWinning = null;
+    if (newState.history.gameState.points.player1score > newState.history.gameState.points.player2score)
+      whoIsWinning = this.props.player1;
+    else if (newState.history.gameState.points.player1score < newState.history.gameState.points.player2score)
+      whoIsWinning = this.props.player2;
+
     if (
       newState.availableMoves.length < 1 ||
       newState.history[newState.round].passCount >= 2
-    )
+    ) 
+    {
       this.setState({
         history: newState.history,
         round: newState.round,
         currPlayer: newState.currPlayer,
         availableMoves: newState.availableMoves,
-        gameEnd: true
+        gameEnd: true,
+        winner: whoIsWinning
       });
-    else this.setState(newState);
+      this.evalResult();
+    }
+    else 
+      this.setState(newState);
+    console.log(this.state)
   }
 }
 
