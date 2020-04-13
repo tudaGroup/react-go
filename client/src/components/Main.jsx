@@ -81,6 +81,8 @@ const Main = () => {
             `/game?player1=${data.createdChallenge}&player2=${data.acceptedChallenge}`
           );
         });
+      }).catch(e => {
+        history.push('/login');
       });
   }, []);
 
