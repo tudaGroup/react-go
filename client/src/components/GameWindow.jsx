@@ -479,8 +479,8 @@ class GameWindow extends React.Component {
     let altText, countryID;
     switch (country) {
       case 'Germany':
-        altText = 'Germany';
-        countryID = 'DE';
+        altText = 'USA';
+        countryID = 'US';
         break;
       case 'Korea':
         altText = 'Korea';
@@ -499,8 +499,8 @@ class GameWindow extends React.Component {
         countryID = 'FR';
         break;
       default:
-        altText = 'USA';
-        countryID = 'US';
+        altText = 'Germany';
+        countryID = 'DE';
         break;
     }
     return (
@@ -556,9 +556,7 @@ class GameWindow extends React.Component {
             </div>
           </Col>
           <Col>
-            {player.props.data.country
-              ? player.props.data.country
-              : 'Undefined'}
+            {player.props.data.country ? player.props.data.country : 'Unknown'}
           </Col>
         </Row>
         <Row type='flex' className='infoboxrow'>
@@ -747,9 +745,7 @@ class GameWindow extends React.Component {
                 )
               </span>
             </p>
-            <button>
-              Back to Main Page
-            </button>
+            <button>Back to Main Page</button>
           </div>
         </div>
       );
