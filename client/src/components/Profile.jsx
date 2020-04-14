@@ -8,7 +8,8 @@ import { ThunderboltOutlined } from '@ant-design/icons';
 
 const Profile = () => {
   const [username, setUsername] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [givenName, setGivenName] = useState('');
+  const [surName, setSurName] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [memberSince, setMemberSince] = useState('May 31, 2016');
@@ -33,12 +34,14 @@ const Profile = () => {
     api
       .get(`users/${requestedProfile}`, {
         headers: {
-          Authorization: 'Bearer ' + token
-        }
+          Authorization: 'Bearer ' + token,
+        },
       })
-      .then(result => {
+      .then((result) => {
+        console.log(result);
         setUsername(result.data.username);
-        setFullName(result.data.givenName + ' ' + result.data.surName);
+        setGivenName(result.data.givenName);
+        setSurName(result.data.surName);
         setCity(result.data.location);
         setCountry(result.data.country);
         setBiography(result.data.biography);
@@ -54,17 +57,17 @@ const Profile = () => {
         api
           .get(`games/${result.data.username}`, {
             headers: {
-              Authorization: 'Bearer ' + token
-            }
+              Authorization: 'Bearer ' + token,
+            },
           })
-          .then(result => {
-            console.log(result)
+          .then((result) => {
+            console.log(result);
             setGames(result.data.games);
             setWins(result.data.wins);
             setLosses(result.data.losses);
           });
       })
-      .catch(e => {
+      .catch((e) => {
         setUserNotFound(true);
       });
   }, []);
@@ -84,13 +87,9 @@ const Profile = () => {
     );
   };
 
-  const renderFlag = country => {
+  const renderFlag = (country) => {
     let altText, countryID;
     switch (country) {
-      case 'Germany':
-        altText = 'Germany';
-        countryID = 'DE';
-        break;
       case 'Korea':
         altText = 'Korea';
         countryID = 'KR';
@@ -107,9 +106,13 @@ const Profile = () => {
         altText = 'France';
         countryID = 'FR';
         break;
-      default:
+      case 'USA':
         altText = 'USA';
         countryID = 'US';
+        break;
+      default:
+        altText = 'Germany';
+        countryID = 'DE';
         break;
     }
     return (
@@ -141,10 +144,13 @@ const Profile = () => {
             <RatingChart title='Rating' ratings={ratings} />
           </Col>
           <Col span={12} className='profile__info'>
-            <div>{fullName}</div>
             <div>
-              {renderFlag(country)}
-              {city}, {country}
+              {givenName} {surName}
+            </div>
+            <div>
+              {country ? <span>{renderFlag(country)}</span> : null}
+              {city}
+              {city && country ? ', ' : null} {country}
             </div>
             <div></div>
             <div>Member since {memberSince}</div>
@@ -171,7 +177,7 @@ const Profile = () => {
               oldRatingPlayer2,
               newRatingPlayer2,
               timestamp,
-              player1Won
+              player1Won,
             }) => (
               <Row justify='space-around' className='profile__game'>
                 <Col>
