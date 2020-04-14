@@ -8,16 +8,19 @@ import { Button } from 'antd';
  * this.props.customButtons {[label: String, onClick: onClickHandeler]} - custom Buttons can be added in a list
  */
 class Chat extends Component {
-    constructor(props) {
-        super(props);
-        this. state = {
-            inputbuffer: '',
-            chatbuffer: []
-        }
-        this.props.socket.on('chat', this.onChaMsg);
+  constructor(props) {
+    super(props);
+    console.log(this.props.socket);
+    this.socket = this.props.socket;
+    this.socket.on('chat', this.onChatMsg);
+    
+    this.state = {
+      stringbuffer: '',
+      chatbuffer: [],
     }
+  }
 
-  onChaMsg = (msg) => {
+  onChatMsg = (msg) => {
     let newBuffer = this.state.chatbuffer.slice();
     newBuffer.push(msg);
     this.setState({ chatbuffer: newBuffer });
@@ -29,7 +32,7 @@ class Chat extends Component {
   sendMessage = () => {
     console.log(this.props.socket)
     if(this.state.stringbuffer.length > 0)
-      this.props.socket.emit('chat', { data: {user: this.props.user, msg: this.state.stringbuffer}, room: this.props.roomName });
+      this.socket.emit('chat', { data: {user: this.props.user, msg: this.state.stringbuffer}, room: this.props.roomName });
     this.setState({ stringbuffer: '' });
   }
 

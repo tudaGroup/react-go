@@ -119,7 +119,6 @@ class GameWindow extends React.Component {
     window.addEventListener('resize', this.onResize);
 
     this.socket.on('game', this.onGameComm);
-    this.socket.on('chat', this.onChatMsg);
     this.socket.on('system', this.onSystemMsg);
     console.log(this.p1);
     this.init(this.gameData, user1, user2);
@@ -707,15 +706,7 @@ class GameWindow extends React.Component {
               fontSize: '25px',
             }}
           >
-            <div style={{ width: '100%' }}>
-              <button
-                className='close'
-                onClick={(e) => this.setState({ showEndWindow: false })}
-              >
-                Close
-              </button>
-            </div>
-            <p>
+            <p style={{ textAlign: 'center' }}>
               {this.ownPlayer === null
                 ? 'Game ended.'
                 : this.state.winner === this.ownPlayer
@@ -756,6 +747,9 @@ class GameWindow extends React.Component {
                 )
               </span>
             </p>
+            <button>
+              Back to Main Page
+            </button>
           </div>
         </div>
       );
