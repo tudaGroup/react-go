@@ -3,10 +3,12 @@ import jwt_decode from 'jwt-decode';
 import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
-import { Game, Player, Board } from './BoardComponents';
-import { Row, Col, Button } from 'antd';
+import { Game, Player } from './BoardComponents';
+import Clock from './Clock';
+import { Layout, Row, Col } from 'antd';
 import 'antd/dist/antd.css';
 import Chat from './Chat';
+
 
 
 const msgType = {
@@ -20,29 +22,24 @@ const msgType = {
 
 const INFOBOXSYMBOLRATIO = 6;
 
-
 /**
  * this.g                   - game object to call methods of BoardComponent.Game
  * this.game                - game object for rendering the game
  * this.state.canvasSize    - size of rendered board in pixel
  * this.state.currentPlayer - current Player
  * this.state.prevData      - previous transmitted move data
- * this.socket              - socket 
+ * this.socket              - socket
  * this.decoded             - JSONWebToken
  * this.roomName            - roomName for Game Communication
  * this.p1                  - BoardComponents.Player instance of Player 1
  * this.p2                  - BoardComponents.Player instance of Player 2
- * this.un                  - username of own Player 
- * this.ownPlayer           - 
- *  
+ * this.un                  - username of own Player
+ * this.ownPlayer           -
+ *
  */
 class GameWindow extends React.Component {
-   
-
   constructor(props) {
     super(props);
-    
-    
 
     this.state = {
       history: null,
@@ -51,6 +48,7 @@ class GameWindow extends React.Component {
       winner: null,
       gameEnd: false,
       loading: true,
+
       boardToScreenRatio: 0.85 ,
       chatbuffer: [],
       stringbuffer: '',
@@ -89,10 +87,11 @@ class GameWindow extends React.Component {
       `/games/active?player1=${pl1}&player2=${pl2}`,
       {
         headers: {
-          Authorization: 'Bearer ' + this.token
-        }
+          Authorization: 'Bearer ' + this.token,
+        },
       }
     );
+
 
     if(this.gameData.status === 204){
       history.push('/');
@@ -107,15 +106,14 @@ class GameWindow extends React.Component {
           Authorization: 'Bearer ' + this.token
         }
       }
-    );
 
-    const user2 = await api.get(
-      `users/${pl2}`,
-      {
-        headers: {
-          Authorization: 'Bearer ' + this.token
-        }
-      }
+    );
+    this.p2 = (
+      <Player
+        name={gameData.data.player2}
+        playerColor={'#f5f9ff'}
+        data={user2.data}
+      />
     );
 
     if(this.gameData.data.player1won !== undefined)
@@ -159,6 +157,7 @@ class GameWindow extends React.Component {
       loading: false,
       currentPlayer: this.p1,
       canvasSize: canvassize,
+
       history: [
         {
           gameState: initState,
@@ -249,9 +248,9 @@ class GameWindow extends React.Component {
    */
   broadcastMove = (x, y) => {
     let data = { message: { type: msgType.MOVE, x: x, y: y, sender: this.un, }, room: this.roomName };
+
     this.socket.emit('game', data);
   };
-
 
   /**
    * passes the move
@@ -425,10 +424,9 @@ class GameWindow extends React.Component {
           <div style={{ borderRadius: '50%', border: '0', backgroundColor: this.state.currentPlayer ? this.state.currentPlayer.props.playerColor : 'purple', width: '20px', height: '20px' }}></div>
           <div>Round {this.state.round + 1}</div>
       </div>
-    )
-  }
+    );
+  };
 
-  
   /**
    * Renders a image of flag of given country(default US)
    * Grabbbed from Profile.jsx
@@ -471,71 +469,99 @@ class GameWindow extends React.Component {
     );
   };
 
-
   /**
    * displays player information
    */
   playerInfo = (player) => {
-    if(!player)
-      return null;
+    if (!player) return null;
     let playerColor = player.props.playerColor;
-    return(
-        <div className='infobox'>
-          <Row type='flex' className="infoboxrow">
-            <Col span={INFOBOXSYMBOLRATIO}>
-              <div className='infoboxiconcontainer'>
-                <div style={{ borderRadius: '50%', border: '0', backgroundColor: playerColor, width: '20px', height: '20px' }}/>
-              </div>
-            </Col>
-            <Col>
-              {player.props.name ? player.props.name : 'Undefined'}
-            </Col>
-          </Row>
-          <Row type='flex' className="infoboxrow">
-            <Col span={INFOBOXSYMBOLRATIO}>
-              <div className='infoboxiconcontainer'>
-                {player.props.data.country ? 
-                  <div style={{ height: 'min-content', width: 'min-content'}}>
-                    {this.renderFlag(player.props.data.country)}
-                  </div> 
-                  : 
-                  <div style={{ backgroundColor: 'white', width: '30px', height: '20px' }}/>
-                }
-              </div>
-            </Col>
-            <Col>
-              {player.props.data.country ? player.props.data.country : 'Undefined'}
-            </Col>
-          </Row>
-          <Row type='flex' className="infoboxrow">
-            <Col span={INFOBOXSYMBOLRATIO} className='infoboxiconcontainer'>
-              <div className='infoboxicon'>
-                <img src={process.env.PUBLIC_URL + '/rank_sym.png'} className='sicon'/>
-              </div>
-            </Col>
-            <Col>
-              {player.props.data.ratings[player.props.data.ratings.length - 1].rating}
-            </Col>
-          </Row>
-          <Row type='flex' className="infoboxrow">
-            <Col span={INFOBOXSYMBOLRATIO} className='infoboxiconcontainer'>
-              <div className='infoboxicon'>
-                <img src={process.env.PUBLIC_URL + '/time_icon.png'} className='sicon'/>
-              </div>
-            </Col>
-            <Col>
-                {/** insert time rendering component here */'00:00'}
-            </Col>
-          </Row>
-        </div>
-    )
-  }
-
+    return (
+      <div className='infobox'>
+        <Row type='flex' className='infoboxrow'>
+          <Col span={INFOBOXSYMBOLRATIO}>
+            <div className='infoboxiconcontainer'>
+              <div
+                style={{
+                  borderRadius: '50%',
+                  border: '0',
+                  backgroundColor: playerColor,
+                  width: '20px',
+                  height: '20px',
+                }}
+              />
+            </div>
+          </Col>
+          <Col>{player.props.name ? player.props.name : 'Undefined'}</Col>
+        </Row>
+        <Row type='flex' className='infoboxrow'>
+          <Col span={INFOBOXSYMBOLRATIO}>
+            <div className='infoboxiconcontainer'>
+              {player.props.data.country ? (
+                <div style={{ height: 'min-content', width: 'min-content' }}>
+                  {this.renderFlag(player.props.data.country)}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    backgroundColor: 'white',
+                    width: '30px',
+                    height: '20px',
+                  }}
+                />
+              )}
+            </div>
+          </Col>
+          <Col>
+            {player.props.data.country
+              ? player.props.data.country
+              : 'Undefined'}
+          </Col>
+        </Row>
+        <Row type='flex' className='infoboxrow'>
+          <Col span={INFOBOXSYMBOLRATIO} className='infoboxiconcontainer'>
+            <div className='infoboxicon'>
+              <img
+                src={process.env.PUBLIC_URL + '/rank_sym.png'}
+                className='sicon'
+              />
+            </div>
+          </Col>
+          <Col>
+            {
+              player.props.data.ratings[player.props.data.ratings.length - 1]
+                .rating
+            }
+          </Col>
+        </Row>
+        <Row type='flex' className='infoboxrow'>
+          <Col span={INFOBOXSYMBOLRATIO} className='infoboxiconcontainer'>
+            <div className='infoboxicon'>
+              <img
+                src={process.env.PUBLIC_URL + '/time_icon.png'}
+                className='sicon'
+              />
+            </div>
+          </Col>
+          <Col>
+            <Clock
+              isActive={
+                player.props.name === this.state.currentPlayer.props.name &&
+                this.game._self.state.round !== 1
+              }
+              startTime={this.state.time}
+              increment={this.state.increment}
+            />
+          </Col>
+        </Row>
+      </div>
+    );
+  };
 
   /**
    * calculates optimal canvas size depending on window size
    */
   getNewCanvasSize = () => {
+
     let smallerAxis = window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth;
     if(this.gameView && this.infoview) {
       if(this.gameView.getBoundingClientRect().top < this.infoview.getBoundingClientRect().top)
@@ -543,6 +569,7 @@ class GameWindow extends React.Component {
     }
     return smallerAxis * this.state.boardToScreenRatio > 400 ? smallerAxis * this.state.boardToScreenRatio : 400;
   }
+
 
 
   /**
@@ -646,7 +673,6 @@ class GameWindow extends React.Component {
       ) 
   }
 
-
   /**
    * resize handler
    */
@@ -656,10 +682,11 @@ class GameWindow extends React.Component {
     if(this.g) this.g.setCanvasSize(newSize);
   }
 
+
   /**
    * Player and current game information
    */
-  displayInfo =  () => {
+  displayInfo = () => {
     return (
       <div 
         	style={{ 
@@ -667,26 +694,24 @@ class GameWindow extends React.Component {
             alignContent: 'space-between',
             width: '100%'
       }}>
+
         {this.playerInfo(this.p1)}
         {this.gameInfo()}
         {this.playerInfo(this.p2)}
       </div>
     );
-  }
+  };
 
   increaseBoardRatio = () => {
-    if(this.state.boardToScreenRatio >= 0.9) 
-      return;
+    if (this.state.boardToScreenRatio >= 0.9) return;
     this.setState({ boardToScreenRatio: this.state.boardToScreenRatio - 0.1 });
-  }
+  };
 
   decreaseBoardRatio = () => {
-    if(this.state.boardToScreenRatio <= 0.3) 
-      return;
+    if (this.state.boardToScreenRatio <= 0.3) return;
     this.setState({ boardToScreenRatio: this.state.boardToScreenRatio - 0.1 });
-  }
+  };
 
-  
   render() {
     console.log(this.state)
     if(this.state.loading)
