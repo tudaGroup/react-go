@@ -3,37 +3,22 @@ import jwt_decode from 'jwt-decode';
 import history from '../history';
 import api from '../api';
 import socketIOClient from 'socket.io-client';
-import { Game, Player } from './BoardComponents';
+import { Game, Player, Board } from './BoardComponents';
 import Clock from './Clock';
-import { Layout, Row, Col } from 'antd';
+import { Row, Col } from 'antd';
 import 'antd/dist/antd.css';
-
-const { Header, Content, Footer } = Layout;
+import Chat from './Chat';
 
 const msgType = {
   MOVE: 'MOVE',
-  MOVE_ACK: 'MOVE_ACK',
-  MOVE_ACK_ACK: 'MOVE_ACK_ACK',
   PASS: 'PASS',
-  PASS_ACK: 'PASS_ACK',
-  PASS_ACK_ACK: 'PASS_ACK_ACK',
+  FORFEIT: 'FORFEIT',
+  RESULT: 'RESULT',
   ERR: 'ERR',
   NULL: 'NULL',
 };
 
-const commState = {
-  NONE: 'NONE',
-  WAITING_MOVE_ACK: 'WAITING_MOVE_ACK',
-  WAITING_MOVE_ACK_ACK: 'WAITING_MOVE_ACK_ACK',
-  WAITING_PASS_ACK: 'WAITING_PASS_ACK',
-  WAITING_PASS_ACK_ACK: 'WAITING_PASS_ACK_ACK',
-};
-
 const INFOBOXSYMBOLRATIO = 6;
-const INFOBOXWIDTH = 275;
-const MARGIN = 20;
-const CHATBOXWIDTH = 590;
-const CHATBOXHEIGHT = 440;
 
 /**
  * this.g                   - game object to call methods of BoardComponent.Game
@@ -55,15 +40,20 @@ class GameWindow extends React.Component {
     super(props);
 
     this.state = {
-      canvasSize: 300,
+      history: null,
+      round: 0,
       currentPlayer: null,
+      winner: null,
+      gameEnd: false,
       loading: true,
-      currentState: commState.NONE,
-      prevData: { x: NaN, y: NaN },
-      boardToScreenRatio: 0.5,
-      round: 1,
-      viewmode: 0,
+
+      boardToScreenRatio: 0.85,
       chatbuffer: [],
+      stringbuffer: '',
+      canvasSize: 300,
+      showEndWindow: false,
+      playersConnected: false,
+      waitingForResult: true,
     };
   }
 
@@ -90,9 +80,8 @@ class GameWindow extends React.Component {
     // Set up communication between the two players exclusively
     this.roomName = `${pl1}-${pl2}`;
     this.socket = socketIOClient('http://localhost:8000');
-    this.socket.emit('joinGame', this.roomName);
 
-    const gameData = await api.get(
+    this.gameData = await api.get(
       `/games/active?player1=${pl1}&player2=${pl2}`,
       {
         headers: {
@@ -100,6 +89,11 @@ class GameWindow extends React.Component {
         },
       }
     );
+
+    if (this.gameData.status === 204) {
+      history.push('/');
+      return;
+    }
 
     const user1 = await api.get(`users/${pl1}`, {
       headers: {
@@ -112,9 +106,27 @@ class GameWindow extends React.Component {
         Authorization: 'Bearer ' + this.token,
       },
     });
+    this.p2 = (
+      <Player
+        name={this.gameData.data.player2}
+        playerColor={'#f5f9ff'}
+        data={user2.data}
+      />
+    );
 
-    if (gameData.data.player1won !== undefined) history.push('/');
+    if (this.gameData.data.player1won !== undefined) history.push('/');
 
+    window.addEventListener('resize', this.onResize);
+
+    this.socket.on('game', this.onGameComm);
+    this.socket.on('chat', this.onChatMsg);
+    this.socket.on('system', this.onSystemMsg);
+    console.log(this.p1);
+    this.init(this.gameData, user1, user2);
+  }
+
+  init(gameData, user1, user2) {
+    console.log(gameData);
     this.p1 = (
       <Player
         name={gameData.data.player1}
@@ -130,143 +142,106 @@ class GameWindow extends React.Component {
       />
     );
     this.un = localStorage.getItem('username');
-    this.ownPlayer = this.p1.props.name === this.un ? this.p1 : this.p2;
+    this.socket.emit('online', this.un);
+    this.socket.emit('joinGame', this.roomName);
+    if (this.un === this.p1.props.name) this.ownPlayer = this.p1;
+    else if (this.un === this.p2.props.name) this.ownPlayer = this.p2;
+    else this.ownPlayer = null;
     let canvassize = this.getNewCanvasSize();
-    this.game = (
-      <Game
-        ref={(game) => (this.g = game)}
-        boardSize={gameData.data.size}
-        player1={this.p1}
-        player2={this.p2}
-        ownPlayer={this.ownPlayer}
-        boardHW={canvassize}
-        broadcast={this.broadcastMove.bind(this)}
-        err={this.err}
-        pass={this.pass}
-        multi={true}
-      />
-    );
+    this.boardSize = gameData.data.size;
+    let initState = {
+      field: new Array(this.boardSize * this.boardSize).fill(null),
+      points: { [this.p1.props.name]: 0, [this.p2.props.name]: 0 },
+    };
 
-    window.addEventListener('resize', this.onResize);
-    this.socket.on('game', this.onMessage);
     this.setState({
       loading: false,
       currentPlayer: this.p1,
       canvasSize: canvassize,
       time: gameData.data.time,
       increment: gameData.data.timeIncrement,
+      history: [
+        {
+          gameState: initState,
+          passCount: 0,
+        },
+      ],
+      availableMoves: Game.updateAvailableMoves.bind(this)(
+        initState,
+        initState,
+        this.p1,
+        this.p2
+      ),
     });
-    this.setOptimalViewMode();
   }
+
+  /**
+   * #### methods handeling communications ####
+   */
+
+  /**
+   * @param {Message} msg - a system Message received
+   */
+  onSystemMsg = (msg) => {
+    console.log(msg);
+    if (msg.type === 'DISCONNECT') {
+      this.socket.emit('chat', {
+        data: { user: 'System', msg: `${msg.user} has disconnected.` },
+        room: this.roomName,
+      });
+      this.onDisconnect(msg.user);
+    } else if (msg.type === 'JOIN') {
+      // this.socket.emit('chat', { data: { user: 'System', msg: `${msg.user} has joined the room.` }, room: this.roomName });
+    } else if (msg.type === 'CONNECTION_ESTABLISHED')
+      this.setState({ playersConnected: true });
+  };
+
+  /**
+   * @param {User} user - disconnected user
+   */
+  onDisconnect = (user) => {
+    if (user === this.p1.props.name) this.setImmediateWin(this.p2);
+    else if (user === this.p2.props.name) this.setImmediateWin(this.p1);
+  };
 
   /**
    * Game Communication Handler(See Documentation)
    */
-  onMessage = (msg) => {
-    if (msg.type === msgType.ERR) {
-      // received an error, exit program
-      console.log(msg);
-      throw Error(msg.errmsg);
+  onGameComm = (msg) => {
+    console.log(msg);
+    if (msg.sender === this.un) return;
+    if (msg.type === msgType.MOVE) {
+      this.processInput(msg.x, msg.y, msg.sender);
+    } else if (msg.type === msgType.PASS) {
+      this.pass(msg.sender);
+    } else if (msg.type === msgType.FORFEIT) {
+      let winner = msg.sender === this.p1.props.name ? this.p2 : this.p1;
+      this.setImmediateWin(winner);
+    } else if (
+      msg.type === msgType.RESULT &&
+      this.state.gameEnd &&
+      this.state.waitngForResult
+    ) {
+      this.onResult(msg.data);
     }
-    let response = null;
-    switch (this.state.currentState) {
-      case commState.NONE: // the current player has made no move nor passed
-        if (msg.type === msgType.MOVE) {
-          this.state.prevData = { x: msg.x, y: msg.y };
-          response = {
-            message: { type: msgType.MOVE_ACK, ...this.state.prevData },
-            room: this.roomName,
-          };
-          this.setState({ currentState: commState.WAITING_MOVE_ACK_ACK });
-        } else if (msg.type === msgType.PASS) {
-          response = {
-            message: { type: msgType.PASS_ACK },
-            room: this.roomName,
-          };
-          this.setState({ currentState: commState.WAITING_PASS_ACK_ACK });
-        }
-        break;
-      case commState.WAITING_MOVE_ACK: // player has sent a MOVE msg and waits for acknowledgement
-        if (msg.type === msgType.MOVE_ACK) {
-          if (
-            this.state.prevData.x === msg.x &&
-            this.state.prevData.y === msg.y
-          ) {
-            response = {
-              message: { type: msgType.MOVE_ACK_ACK, ...this.state.prevData },
-              room: this.roomName,
-            };
-            this.g.processInput(msg.x, msg.y);
-            this.setState({
-              round: this.state.round + 1,
-              currentState: commState.NONE,
-              currentPlayer: this.g.getCurrentPlayer(),
-            });
-          } else {
-            let errmsg =
-              'Error occured during MOVE_ACK: expected ' +
-              this.state.prevData.toString() +
-              ' but received ' +
-              { x: msg.x, y: msg.y };
-            response = {
-              message: { type: msgType.ERR, errmsg: errmsg },
-              room: this.roomName,
-            };
-            this.setState({ currentState: commState.NONE });
-          }
-        }
-        break;
-      case commState.WAITING_MOVE_ACK_ACK: // player has sent a MOVE_ACK and waits for acknowledgement
-        if (msg.type === msgType.MOVE_ACK_ACK) {
-          if (
-            this.state.prevData.x === msg.x &&
-            this.state.prevData.y === msg.y
-          ) {
-            this.g.processInput(msg.x, msg.y);
-            this.setState({
-              round: this.state.round + 1,
-              currentState: commState.NONE,
-              currentPlayer: this.g.getCurrentPlayer(),
-            });
-          } else {
-            let errmsg =
-              'Error occured during MOVE_ACK_ACK: expected ' +
-              this.state.prevData.toString() +
-              ' but received ' +
-              { x: msg.x, y: msg.y }.toString();
-            response = {
-              message: { type: msgType.ERR, errmsg: errmsg },
-              room: this.roomName,
-            };
-            this.setState({ currentState: commState.NONE });
-          }
-        }
-        break;
-      case commState.WAITING_PASS_ACK: // player has sent a PASS msg and waits for acknowledgement
-        if (msg.type === msgType.PASS_ACK) {
-          response = {
-            message: { type: msgType.PASS_ACK_ACK },
-            room: this.roomName,
-          };
-          this.g.pass();
-          this.setState({
-            round: this.state.round + 1,
-            currentState: commState.NONE,
-            currentPlayer: this.g.getCurrentPlayer(),
-          });
-        }
-        break;
-      case commState.WAITING_PASS_ACK_ACK: // player has sent a PASS_ACK msg and waits for acknowledgement
-        if (msg.type === msgType.PASS_ACK_ACK) {
-          this.g.pass();
-          this.setState({
-            round: this.state.round + 1,
-            currentState: commState.NONE,
-            currentPlayer: this.g.getCurrentPlayer(),
-          });
-        }
-    }
-    if (response !== null) this.socket.emit('game', response);
+  };
+
+  onResult = (updatedGame) => {
+    this.newRatingPlayer1 = updatedGame.newRatingPlayer1;
+    this.newRatingPlayer2 = updatedGame.newRatingPlayer2;
+    this.setState({ waitingForResult: false, showEndWindow: true });
+  };
+
+  /**
+   * formats and sends message over socket {data: {user: #username of the sending person, msg: #message to be sent}, room: #room name of current gameWindow}
+   */
+  sendMessage = () => {
+    if (this.state.stringbuffer.length > 0)
+      this.socket.emit('chat', {
+        data: { user: this.un, msg: this.state.stringbuffer },
+        room: this.roomName,
+      });
+    this.setState({ stringbuffer: '' });
   };
 
   /**
@@ -276,27 +251,200 @@ class GameWindow extends React.Component {
    */
   broadcastMove = (x, y) => {
     let data = {
-      message: { type: msgType.MOVE, x: x, y: y },
+      message: { type: msgType.MOVE, x: x, y: y, sender: this.un },
       room: this.roomName,
     };
-    this.setState({
-      currentState: commState.WAITING_MOVE_ACK,
-      prevData: { x: x, y: y },
-    });
+
     this.socket.emit('game', data);
   };
 
   /**
    * passes the move
    */
-  pass = () => {
-    this.setState({ currentState: commState.WAITING_PASS_ACK });
+  broadcastPass = () => {
     this.socket.emit('game', {
-      message: { type: msgType.PASS },
+      message: { type: msgType.PASS, sender: this.un, player: this.ownPlayer },
+      room: this.roomName,
+    });
+    this.socket.emit('chat', {
+      data: {
+        user: 'Game',
+        msg: `${this.un} has passed.(Round ${this.state.round})`,
+      },
       room: this.roomName,
     });
   };
 
+  /**
+   * error handler for child components
+   */
+  err = (state) => {
+    alert('An Error occured on Child component');
+    console.log(state);
+  };
+
+  /**
+   * methods manipulating / using GameStates
+   */
+
+  setImmediateWin(player) {
+    this.setState({ winner: player, gameEnd: true });
+    this.onWin(player);
+  }
+
+  processInput = (x, y, player) => {
+    if (
+      player !== this.state.currentPlayer.props.name ||
+      this.state.gameEnd ||
+      !this.state.availableMoves[y * this.boardSize + x]
+    )
+      return;
+    this.onNextMove(this.state.availableMoves[y * this.boardSize + x]);
+    this.broadcastMove(x, y);
+  };
+
+  handlePass = (player) => {
+    if (player !== this.state.currentPlayer.props.name || this.state.gameEnd)
+      return;
+    this.pass();
+    this.broadcastPass();
+  };
+
+  pass = () => {
+    let nextPlayer = this.getNextPlayer();
+    let newMoves = Game.updateAvailableMoves.bind(this)(
+      this.state.history[this.state.round].gameState,
+      this.state.history[this.state.round].gameState,
+      nextPlayer,
+      this.state.currentPlayer
+    );
+    let newState = {
+      history: this.state.history.slice(0, this.state.round + 1).concat([
+        {
+          gameState: this.state.history[this.state.round].gameState,
+          passCount: this.state.history[this.state.round].passCount + 1,
+        },
+      ]),
+      round: this.state.round + 1,
+      currentPlayer: nextPlayer,
+      availableMoves: newMoves,
+    };
+    console.log(newState);
+    this.updateGame(newState);
+  };
+
+  /**
+   * update game state when move is made
+   */
+  onNextMove = (fields) => {
+    const history = this.state.history.slice(0, this.state.round + 1);
+
+    let nextPlayer = this.getNextPlayer();
+    let newMoves = Game.updateAvailableMoves.bind(this)(
+      fields,
+      history[this.state.round].gameState,
+      nextPlayer,
+      this.state.currentPlayer
+    );
+    let newState = {
+      history: history.concat([
+        {
+          gameState: fields,
+          passCount: 0,
+        },
+      ]),
+      round: history.length,
+      currentPlayer: nextPlayer,
+      availableMoves: newMoves,
+    };
+    this.updateGame(newState);
+  };
+
+  getNextPlayer() {
+    return this.state.currentPlayer === this.p1 ? this.p2 : this.p1;
+  }
+
+  onForfeit = () => {
+    if (!this.ownPlayer || this.state.gameEnd) return;
+    this.setImmediateWin(this.ownPlayer === this.p1 ? this.p2 : this.p1);
+    this.socket.emit('game', {
+      message: { type: msgType.FORFEIT, sender: this.ownPlayer.props.name },
+      room: this.roomName,
+    });
+  };
+
+  /**
+   * won player send results to server, the other player does not do anything
+   */
+  onWin = (winner) => {
+    if (winner.props.name !== this.un) return;
+
+    api
+      .patch(
+        `/games/${this.gameData.data._id}`,
+        { player1Won: winner === this.p1 },
+        {
+          headers: {
+            Authorization: 'Bearer ' + this.token,
+          },
+        }
+      )
+      .then((res) => {
+        console.log(res);
+        this.socket.emit('game', {
+          message: { type: msgType.RESULT, data: res.data },
+          room: this.roomName,
+        });
+        this.onResult(res.data);
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  };
+
+  /**
+   * updates game accordingly to new game state(terminates game if passCount >= 2), automatically passes if there are no moves to be made for current player
+   * @param {GameState} newState - new game state
+   */
+  updateGame(newState) {
+    let whoIsWinning = null;
+    let newGameState = newState.history[newState.round].gameState;
+    if (
+      newGameState.points[this.p1.props.name] >
+      newGameState.points[this.p2.props.name]
+    )
+      whoIsWinning = this.p1;
+    else if (
+      newGameState.points[this.p1.props.name] <
+      newGameState.points[this.p2.props.name]
+    )
+      whoIsWinning = this.p2;
+
+    if (newState.availableMoves.length < 1) {
+      this.setState(newState);
+      if (newState.currentPlayer === this.ownPlayer)
+        this.socket.emit('chat', {
+          data: {
+            user: 'Game',
+            msg: 'Automatic Pass because there were no moves that can be made.',
+          },
+          room: this.roomName,
+        });
+      this.pass();
+    }
+    if (newState.history[newState.round].passCount >= 2) {
+      this.setState({ ...newState, gameEnd: true, winner: whoIsWinning });
+      this.onWin(whoIsWinning);
+    } else this.setState(newState);
+  }
+
+  /**
+   * rendering stuff
+   */
+
+  /**
+   * display game info
+   */
   gameInfo = () => {
     return (
       <div
@@ -305,6 +453,7 @@ class GameWindow extends React.Component {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          padding: '20px',
         }}
       >
         <div
@@ -318,19 +467,9 @@ class GameWindow extends React.Component {
             height: '20px',
           }}
         ></div>
-        <div>Round {this.state.round}</div>
+        <div>Round {this.state.round + 1}</div>
       </div>
     );
-  };
-
-  err = (state) => {
-    alert('An Error occured on Game Board');
-    console.log(state);
-  };
-
-  err = (state) => {
-    alert('An Error occured on Game Board');
-    console.log(state);
   };
 
   /**
@@ -452,7 +591,7 @@ class GameWindow extends React.Component {
             <Clock
               isActive={
                 player.props.name === this.state.currentPlayer.props.name &&
-                this.game._self.state.round !== 1
+                this.state.round !== 0
               }
               startTime={this.state.time}
               increment={this.state.increment}
@@ -467,72 +606,159 @@ class GameWindow extends React.Component {
    * calculates optimal canvas size depending on window size
    */
   getNewCanvasSize = () => {
-    return window.innerWidth * this.state.boardToScreenRatio > 400
-      ? window.innerWidth * this.state.boardToScreenRatio
+    let smallerAxis =
+      window.innerWidth > window.innerHeight
+        ? window.innerHeight
+        : window.innerWidth;
+    if (this.gameView && this.infoview) {
+      if (
+        this.gameView.getBoundingClientRect().top <
+        this.infoview.getBoundingClientRect().top
+      )
+        this.setState({ boardToScreenRatio: 0.85 });
+    }
+    return smallerAxis * this.state.boardToScreenRatio > 400
+      ? smallerAxis * this.state.boardToScreenRatio
       : 400;
   };
 
-  setOptimalViewMode = () => {
-    if (
-      window.innerWidth -
-        (this.state.canvasSize + INFOBOXWIDTH + CHATBOXWIDTH + 6 * MARGIN) >=
-      0
-    )
-      this.setState({ viewmode: 0 });
-    else this.setState({ viewmode: 1 });
-  };
-
+  /**
+   * renders the content view(the board and the info / chat)
+   */
   contentView = () => {
-    if (this.state.viewmode == 0)
-      return (
-        <div className='gamewindow-contentview'>
-          <div className='player-info-box-v'>
-            {this.playerInfo(this.p1)}
-            {this.playerInfo(this.p2)}
-          </div>
-          <div className='boardview'>{this.game}</div>
-          {this.chatbox()}
-        </div>
-      );
-    else
-      return (
-        <div className='gamewindow-contentview'>
-          <div className='boardview'>{this.game}</div>
-          <div
-            style={{
-              flexGrow: '1',
-              flexBasis: 'auto',
-              width: CHATBOXWIDTH,
-              height: CHATBOXHEIGHT,
-              display: 'flex',
-              alignContent: 'center',
-              alignItems: 'center',
-              justifyContent:
-                this.state.viewmode === 0 ? 'flex-start' : 'center',
-              margin: '20px',
-            }}
-          >
-            {this.chatbox()}
-          </div>
-          <div className='player-info-box-h'>
-            {this.playerInfo(this.p1)}
-            {this.playerInfo(this.p2)}
-          </div>
-        </div>
-      );
-  };
-
-  chatbox = () => {
+    let newHeight = this.state.canvasSize * 0.7;
     return (
       <div
         style={{
-          backgroundColor: 'grey',
-          borderRadius: '10px',
-          width: CHATBOXWIDTH,
-          height: CHATBOXHEIGHT,
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          alignItems: 'center',
         }}
-      ></div>
+      >
+        <div ref={(el) => (this.gameView = el)} className='boardview'>
+          <Board
+            boardSize={this.boardSize}
+            onClick={(x, y) => this.processInput(x, y, this.un)}
+            currField={this.state.history[this.state.round].gameState.field}
+            currPlayer={this.state.currentPlayer}
+            boardHW={this.state.canvasSize}
+          />
+        </div>
+        <div
+          ref={(el) => (this.infoview = el)}
+          style={{
+            margin: '30px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignContent: 'center',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            backgroundColor: '#262320',
+            borderRadius: '10px',
+            height: `${this.state.canvasSize * 0.7}px`,
+          }}
+        >
+          {this.displayInfo()}
+          <Chat
+            user={this.un}
+            socket={this.socket}
+            roomName={this.roomName}
+            customButtons={
+              this.ownPlayer !== null
+                ? [
+                    { label: 'Pass', onClick: this.handlePass },
+                    { label: 'Forfeit', onClick: this.onForfeit },
+                  ]
+                : []
+            }
+          />
+        </div>
+      </div>
     );
+  };
+
+  gameEnded = () => {
+    if (this.state.showEndWindow)
+      return (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            background: 'rgba(0, 0, 0, 0.7)',
+          }}
+        >
+          <div
+            style={{
+              width: '40%',
+              height: '30%',
+              background: '#fff',
+              border: 0,
+              borderRadius: '10px',
+              padding: '15px',
+              color: 'black',
+              fontSize: '25px',
+            }}
+          >
+            <div style={{ width: '100%' }}>
+              <button
+                className='close'
+                onClick={(e) => this.setState({ showEndWindow: false })}
+              >
+                Close
+              </button>
+            </div>
+            <p>
+              {this.ownPlayer === null
+                ? 'Game ended.'
+                : this.state.winner === this.ownPlayer
+                ? 'Victory'
+                : 'Defeat'}
+            </p>
+            <p>
+              {this.p1.props.name}:
+              <span
+                style={{
+                  color: this.p1 === this.state.winner ? 'green' : 'red',
+                }}
+              >
+                {this.newRatingPlayer1}(
+                {this.newRatingPlayer1 - this.gameData.data.oldRatingPlayer1 >=
+                0
+                  ? '+' +
+                    (this.newRatingPlayer1 -
+                      this.gameData.data.oldRatingPlayer1)
+                  : this.newRatingPlayer1 - this.gameData.data.oldRatingPlayer1}
+                )
+              </span>
+            </p>
+            <p>
+              {this.p2.props.name}:
+              <span
+                style={{
+                  color: this.p2 === this.state.winner ? 'green' : 'red',
+                }}
+              >
+                {this.newRatingPlayer2}(
+                {this.newRatingPlayer2 - this.gameData.data.oldRatingPlayer2 >=
+                0
+                  ? '+' +
+                    (this.newRatingPlayer2 -
+                      this.gameData.data.oldRatingPlayer2)
+                  : this.newRatingPlayer2 - this.gameData.data.oldRatingPlayer2}
+                )
+              </span>
+            </p>
+          </div>
+        </div>
+      );
   };
 
   /**
@@ -541,8 +767,7 @@ class GameWindow extends React.Component {
   onResize = () => {
     let newSize = this.getNewCanvasSize();
     this.setState({ canvasSize: newSize });
-    this.setOptimalViewMode();
-    this.g.setCanvasSize(newSize);
+    if (this.g) this.g.setCanvasSize(newSize);
   };
 
   /**
@@ -551,7 +776,11 @@ class GameWindow extends React.Component {
   displayInfo = () => {
     return (
       <div
-        style={{ display: 'flex', flexGrow: 1, alignContent: 'space-between' }}
+        style={{
+          display: 'flex',
+          alignContent: 'space-between',
+          width: '100%',
+        }}
       >
         {this.playerInfo(this.p1)}
         {this.gameInfo()}
@@ -571,24 +800,20 @@ class GameWindow extends React.Component {
   };
 
   render() {
+    console.log(this.state);
     if (this.state.loading) return null;
+    if (!this.state.playersConnected)
+      return <div>Waiting for players to be connected...</div>;
     return (
-      <div className='main'>
+      <div className='gameView'>
         <div className='gamewindow-header'>
           <div style={{ padding: '5px' }}>
             <img src={process.env.PUBLIC_URL + '/ReactGo.png'} />
             ReactGo
-            <div
-              style={{
-                float: 'right',
-                width: 400,
-                height: 50,
-                backgroundColor: 'white',
-              }}
-            ></div>
           </div>
         </div>
         {this.contentView()}
+        {this.gameEnded(this.p1)}
       </div>
     );
   }

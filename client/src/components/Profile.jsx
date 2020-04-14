@@ -58,6 +58,7 @@ const Profile = () => {
             }
           })
           .then(result => {
+            console.log(result)
             setGames(result.data.games);
             setWins(result.data.wins);
             setLosses(result.data.losses);

@@ -59,6 +59,17 @@ h6 {
   font-size: 1.6vw;
 }
 
+.gameView {
+  position: absolute;
+  top: 0;
+  background-color: #131313; /* #161411;*/
+  width: 100%;
+  color: #bababa;
+  font-size: 1.6vw;
+  min-height: 100%;
+  height: auto;
+}
+
 #challenge__box {
   margin: 130px auto;
   background-color: #262320;
@@ -97,6 +108,7 @@ h6 {
   margin-top: 20px;
   float: right;
 }
+
 
 .menu__item {
   padding: 15px 30px;
@@ -223,9 +235,9 @@ h6 {
   margin: 30px;
   display: flex;
   flex-direction: column;
-  align-content: flex-start;
-  justify-content: center;
-  flex-grow: 1;
+  align-content: center;
+  align-items: center;
+  justify-content: center;  
   padding: 20px;
   background-color: #262320;
   border-radius: 17px;
@@ -234,8 +246,11 @@ h6 {
 .infobox {  
   margin: 20px;
   flex-basis: auto;
-  width: 275px;
-  height: 200px;
+  flex-grow: 1;
+  height: max-content;
+  min-height: 200px;
+  min-width: 200px;
+  width: max-content;
   padding: 10px;
   font-size: 15px;
   background-color: #6c6967;
@@ -271,16 +286,16 @@ h6 {
 }
 
 .sendbutton {
-  display: block;
-  border: 0px;
-  height: 30px;
-  width: 30px;
-  border-radius: 50%;
-  background-color: rgb(0, 110, 255);
+  width: auto;
+  background-color: #59afff;
+  height: 100%;
+  border-radius: 10px;
+  color: white;
+  border: 0;
 }
 
 .sendbutton:hover {
-  background-color: rgb(0, 162, 255);
+  background-color: rgb(157, 214, 247);
 }
 
 .sendbutton:active {
@@ -323,4 +338,50 @@ h6 {
   justify-content: center;
   align-items: center;
   align-content: center;
+}
+
+
+.chatInput {
+  display: block; 
+  background-color: #f0f0f0; 
+  flex-grow: 1;
+  height: auto; 
+  border-radius: 10px;
+  margin: 2.5px;
+  margin-top: 0;
+  border: 0; 
+  padding-left: 10px; 
+  padding-right: 10px;
+  color : #262320;
+  overflow: auto
+}
+
+.chatboxbutton {
+  width: auto;
+  margin: 2.5px;
+  margin-top: 0;
+  background-color: #1a5ee8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: auto;
+  border-radius: 5px;
+  border: 0;
+  color: white;
+}
+
+.close {
+  background-color: white;
+  height: fit-content;
+  float: right;
+  width: fit-content;
+  opacity: 0.5;
+  border: 0;
+  font-size: 17px;
+  text-decoration: underline;
+  color: #333;
+}
+
+.close:hover {
+  opacity: 1;
 }

@@ -76,12 +76,13 @@ const Main = () => {
           if (data.createdChallenge === res.data.username) {
             alert(data.acceptedChallenge + ' has accepted your challenge!');
           }
-
           // Redirect to game page
           history.push(
             `/game?player1=${data.createdChallenge}&player2=${data.acceptedChallenge}`
           );
         });
+      }).catch(e => {
+        history.push('/login');
       });
   }, []);
 
