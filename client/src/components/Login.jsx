@@ -12,21 +12,21 @@ const Login = () => {
   const handleLogin = () => {
     api
       .post('/users/login', { name, password })
-      .then(res => {
+      .then((res) => {
         localStorage.setItem('jwt', res.data.token);
         history.push('/');
       })
-      .catch(error => {
+      .catch((error) => {
         createErrorMessage('Username or password is invalid.');
       });
   };
 
-  const createErrorMessage = error => {
+  const createErrorMessage = (error) => {
     setError(error);
     setTimeout(() => setError(''), 3000);
   };
 
-  const handleKeyPress = event => {
+  const handleKeyPress = (event) => {
     if (event.key === 'Enter') {
       handleLogin();
     }
@@ -41,16 +41,16 @@ const Login = () => {
           User name or email
           <Input
             value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyPress={e => handleKeyPress(e)}
+            onChange={(e) => setName(e.target.value)}
+            onKeyPress={(e) => handleKeyPress(e)}
           />
         </div>
         <div className='entry__input'>
           Password
           <Input.Password
             value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyPress={e => handleKeyPress(e)}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={(e) => handleKeyPress(e)}
           />
         </div>
         <Button
@@ -61,8 +61,12 @@ const Login = () => {
           Sign in
         </Button>
         <div className='entry__links'>
-          <Link className='entry__links' to='/register'>Register</Link>
-          <Link className='entry__links' to='/pwresetreq'>Password reset</Link>
+          <Link className='entry__links' to='/register'>
+            Register
+          </Link>
+          <Link className='entry__links' to='/pwresetreq'>
+            Password reset
+          </Link>
         </div>
       </Card>
     </div>
