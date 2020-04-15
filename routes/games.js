@@ -51,11 +51,17 @@ router.get('/games/active', auth, async (req, res) => {
 
 // Return all games of a given player
 router.get('/games/:player', auth, async (req, res) => {
+  const limit = 7;
+  const skip = (req.query.page - 1) * limit;
+
   let player = req.params.player;
   console.log(player);
   let games = await Game.find({
     $or: [{ player1: player }, { player2: player }],
-  }).sort({ _id: -1 });
+  })
+    .sort({ _id: -1 })
+    .skip(skip)
+    .limit(limit);
 
   console.log('games:');
   console.log(games);
@@ -118,7 +124,11 @@ router.patch('/games/:id', auth, async (req, res) => {
         0
       );
     }
+    player1.ratings.push({ rating: newRatingPlayer1, time: new Date() });
+    player2.ratings.push({ rating: newRatingPlayer2, time: new Date() });
 
+    console.log(player1);
+    console.log(player2);
     player1.save();
     player2.save();
   } else {
