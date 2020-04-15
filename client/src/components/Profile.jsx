@@ -4,11 +4,16 @@ import api from '../api';
 import moment from 'moment';
 import RatingChart from './RatingChart';
 import { Row, Col } from 'antd';
-import { ThunderboltOutlined } from '@ant-design/icons';
+import {
+  ThunderboltOutlined,
+  LeftOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 
 const Profile = () => {
   const [username, setUsername] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [givenName, setGivenName] = useState('');
+  const [surName, setSurName] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [memberSince, setMemberSince] = useState('May 31, 2016');
@@ -18,10 +23,10 @@ const Profile = () => {
   const [losses, setLosses] = useState(3);
   const [games, setGames] = useState([]);
   const [userNotFound, setUserNotFound] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const token = localStorage.getItem('jwt');
-
     // Redirect to login page if user is without token
     if (token === null) {
       history.push('/login');
@@ -33,17 +38,20 @@ const Profile = () => {
     api
       .get(`users/${requestedProfile}`, {
         headers: {
-          Authorization: 'Bearer ' + token
-        }
+          Authorization: 'Bearer ' + token,
+        },
       })
-      .then(result => {
-        setUsername(result.data.username);
-        setFullName(result.data.givenName + ' ' + result.data.surName);
-        setCity(result.data.location);
-        setCountry(result.data.country);
-        setBiography(result.data.biography);
-        setMemberSince(moment(result.data.memberSince).format('LL'));
+      .then((result) => {
+        const user = result.data.user;
+        setUsername(user.username);
+        setGivenName(user.givenName);
+        setSurName(user.surName);
+        setCity(user.location);
+        setCountry(user.country);
+        setBiography(user.biography);
+        setMemberSince(moment(user.memberSince).format('LL'));
 
+        // Create graph coordinates for rating graph
         let ratings = [];
         for (let rating of result.data.ratings) {
           ratings.push({ x: new Date(rating.time), y: rating.rating });
@@ -51,23 +59,28 @@ const Profile = () => {
         setRatings(ratings);
 
         // Fetch games
-        api
-          .get(`games/${result.data.username}`, {
-            headers: {
-              Authorization: 'Bearer ' + token
+        api.get(
+            `games/${result.data.username}`,
+
+            {
+              params: { page },
+              headers: {
+                Authorization: 'Bearer ' + token,
+              },
             }
-          })
-          .then(result => {
-            console.log(result)
+          )
+          .then((result) => {
+            console.log(result);
             setGames(result.data.games);
             setWins(result.data.wins);
             setLosses(result.data.losses);
           });
       })
-      .catch(e => {
+      .catch((e) => {
         setUserNotFound(true);
+        console.log(e);
       });
-  }, []);
+  }, [page]);
 
   const renderRatingChanges = (oldRating, newRating, won) => {
     let ratingDifference = newRating - oldRating;
@@ -84,13 +97,9 @@ const Profile = () => {
     );
   };
 
-  const renderFlag = country => {
+  const renderFlag = (country) => {
     let altText, countryID;
     switch (country) {
-      case 'Germany':
-        altText = 'Germany';
-        countryID = 'DE';
-        break;
       case 'Korea':
         altText = 'Korea';
         countryID = 'KR';
@@ -107,9 +116,13 @@ const Profile = () => {
         altText = 'France';
         countryID = 'FR';
         break;
-      default:
+      case 'USA':
         altText = 'USA';
         countryID = 'US';
+        break;
+      default:
+        altText = 'Germany';
+        countryID = 'DE';
         break;
     }
     return (
@@ -130,6 +143,16 @@ const Profile = () => {
     );
   }
 
+  const handlePagination = (direction) => {
+    if (direction === 'left' && page > 1) {
+      setPage(page - 1);
+    }
+
+    if (direction === 'right' && games.length === 7) {
+      setPage(page + 1);
+    }
+  };
+
   return (
     <div className='main'>
       <div className='container'>
@@ -141,10 +164,13 @@ const Profile = () => {
             <RatingChart title='Rating' ratings={ratings} />
           </Col>
           <Col span={12} className='profile__info'>
-            <div>{fullName}</div>
             <div>
-              {renderFlag(country)}
-              {city}, {country}
+              {givenName} {surName}
+            </div>
+            <div>
+              {country ? <span>{renderFlag(country)}</span> : null}
+              {city}
+              {city && country ? ', ' : null} {country}
             </div>
             <div></div>
             <div>Member since {memberSince}</div>
@@ -171,7 +197,7 @@ const Profile = () => {
               oldRatingPlayer2,
               newRatingPlayer2,
               timestamp,
-              player1Won
+              player1Won,
             }) => (
               <Row justify='space-around' className='profile__game'>
                 <Col>
@@ -212,6 +238,16 @@ const Profile = () => {
               </Row>
             )
           )}
+        </div>
+        <div className='pagination'>
+          <LeftOutlined
+            onClick={() => handlePagination('left')}
+            className='pagination__icon'
+          />{' '}
+          <RightOutlined
+            onClick={() => handlePagination('right')}
+            className='pagination__icon'
+          />
         </div>
       </div>
     </div>

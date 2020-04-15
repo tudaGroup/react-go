@@ -9,7 +9,7 @@ const fs = require('fs');
 // Registers the user with username, password and email and sends back the jwt
 router.post('/users', async (req, res) => {
   const user = new User(req.body);
-  
+
   try {
     await user.save();
     const token = await user.generateAuthToken();
@@ -32,7 +32,7 @@ router.post('/users/login', async (req, res) => {
 
 // Sends back the profile information of the current user
 router.get('/users/me', auth, async (req, res) => {
-  res.send(req.user);
+  res.send({ user: req.user, ratings: req.ratings });
 });
 
 router.get('/users/:name', auth, async (req, res) => {
@@ -41,7 +41,8 @@ router.get('/users/:name', auth, async (req, res) => {
   if (!user) {
     res.status(404).send();
   }
-  res.send(user);
+  const ratings = await user.getRatings();
+  res.send({ user, ratings });
 });
 
 // Updates any whitelisted attributes of the user
@@ -54,9 +55,9 @@ router.patch('/users/me', auth, async (req, res) => {
     'location',
     'biography',
     'givenName',
-    'surName'
+    'surName',
   ];
-  const isValidOperation = updates.every(update =>
+  const isValidOperation = updates.every((update) =>
     allowedUpdates.includes(update)
   );
 
@@ -65,7 +66,7 @@ router.patch('/users/me', auth, async (req, res) => {
   }
 
   try {
-    updates.forEach(update => (req.user[update] = req.body[update]));
+    updates.forEach((update) => (req.user[update] = req.body[update]));
     await req.user.save();
     res.send(req.user);
   } catch (e) {

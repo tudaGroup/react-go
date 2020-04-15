@@ -10,7 +10,7 @@ import {
   Radio,
   Row,
   Slider,
-  Input
+  Input,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -20,7 +20,7 @@ import {
   SettingOutlined,
   TrophyOutlined,
   UpCircleOutlined,
-  UserOutlined
+  UserOutlined,
 } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 
@@ -52,26 +52,28 @@ const Main = () => {
     api
       .get('users/me', {
         headers: {
-          Authorization: 'Bearer ' + token
-        }
+          Authorization: 'Bearer ' + token,
+        },
       })
-      .then(res => {
-        setUserId(res.data._id);
-        setUsername(res.data.username);
-        setOwnRating(res.data.ratings[res.data.ratings.length - 1].rating);
+      .then((res) => {
+        const user = res.data.user;
+        const ratings = res.data.ratings;
 
+        setUserId(user._id);
+        setUsername(user.username);
+        setOwnRating(ratings[0].rating);
 
-        localStorage.setItem('username', res.data.username);
+        localStorage.setItem('username', user.username);
         socket = socketIOClient('http://localhost:8000');
 
         // submit username to server
-        socket.emit('online', res.data.username);
-        socket.on('challenges', data => {
+        socket.emit('online', user.username);
+        socket.on('challenges', (data) => {
           // Receive open challenges
           setChallenges(data);
         });
         // Get Notified that challenge got accepted
-        socket.on('acceptChallenge', data => {
+        socket.on('acceptChallenge', (data) => {
           // If the accepted challenge was the current user's challenge
           if (data.createdChallenge === res.data.username) {
             alert(data.acceptedChallenge + ' has accepted your challenge!');
@@ -81,7 +83,9 @@ const Main = () => {
             `/game?player1=${data.createdChallenge}&player2=${data.acceptedChallenge}`
           );
         });
-      }).catch(e => {
+      })
+      .catch((e) => {
+        console.log(e);
         history.push('/login');
       });
   }, []);
@@ -96,12 +100,12 @@ const Main = () => {
     history.push('/login');
   };
 
-  const showModal = e => {
+  const showModal = (e) => {
     e.preventDefault();
     setModalVisible(true);
   };
 
-  const handleModalOk = e => {
+  const handleModalOk = (e) => {
     setModalVisible(false);
     let challenge = {
       name: username,
@@ -110,12 +114,12 @@ const Main = () => {
       size: selectedBoardSize,
       time: selectedTime,
       increment: selectedIncrement,
-      mode: selectedGameMode
+      mode: selectedGameMode,
     };
 
     // Delete old created challenge if there is any
     let filteredChallenges = challenges.filter(
-      challenge => challenge.name !== username
+      (challenge) => challenge.name !== username
     );
 
     // Send new challenge to server
@@ -123,23 +127,23 @@ const Main = () => {
     socket.emit('updateChallenges', [...filteredChallenges, challenge]);
   };
 
-  const handleModalCancel = e => {
+  const handleModalCancel = (e) => {
     setModalVisible(false);
   };
 
-  const handleBoardSizeSelect = e => {
+  const handleBoardSizeSelect = (e) => {
     setSelectedBoardSize(e.target.value);
   };
 
-  const handleTimeSlider = value => {
+  const handleTimeSlider = (value) => {
     setSelectedTime(value);
   };
 
-  const handleIncrementSlider = value => {
+  const handleIncrementSlider = (value) => {
     setSelectedIncrement(value);
   };
 
-  const handleGameModeChange = e => {
+  const handleGameModeChange = (e) => {
     setSelectedGameMode(e.target.value);
   };
 
@@ -154,7 +158,7 @@ const Main = () => {
   ) => {
     // Remove clicked challenge from state and update server
     let filteredChallenges = challenges.filter(
-      challenge => challenge.name !== name
+      (challenge) => challenge.name !== name
     );
     setChallenges(filteredChallenges);
     socket.emit('updateChallenges', filteredChallenges);
@@ -163,7 +167,7 @@ const Main = () => {
     if (username !== name) {
       socket.emit('acceptChallenge', {
         createdChallenge: name,
-        acceptedChallenge: username
+        acceptedChallenge: username,
       });
 
       // Save game to the database
@@ -178,12 +182,12 @@ const Main = () => {
           rated: mode === 'rated',
           oldRatingPlayer1: rating,
           oldRatingPlayer2: ownRating,
-          timestamp: new Date()
+          timestamp: new Date(),
         },
         {
           headers: {
-            Authorization: 'Bearer ' + authToken
-          }
+            Authorization: 'Bearer ' + authToken,
+          },
         }
       );
 
@@ -196,7 +200,7 @@ const Main = () => {
     return <div className='main'></div>;
   }
 
-  const handleKeyPress = e => {
+  const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       history.push(`/profile/${searchText}`);
     }
@@ -213,8 +217,8 @@ const Main = () => {
             placeholder='Search'
             className='profile__searchfield'
             value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            onKeyPress={e => handleKeyPress(e)}
+            onChange={(e) => setSearchText(e.target.value)}
+            onKeyPress={(e) => handleKeyPress(e)}
           />
         )}
         <Link to={{ pathname: `/profile/${username}` }}>
@@ -270,7 +274,7 @@ const Main = () => {
             type='primary'
             style={{
               textTransform: 'uppercase',
-              marginTop: '15px'
+              marginTop: '15px',
             }}
             onClick={showModal}
           >
