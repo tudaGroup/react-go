@@ -4,7 +4,11 @@ import api from '../api';
 import moment from 'moment';
 import RatingChart from './RatingChart';
 import { Row, Col } from 'antd';
-import { ThunderboltOutlined } from '@ant-design/icons';
+import {
+  ThunderboltOutlined,
+  LeftOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 
 const Profile = () => {
   const [username, setUsername] = useState('');
@@ -19,6 +23,7 @@ const Profile = () => {
   const [losses, setLosses] = useState(3);
   const [games, setGames] = useState([]);
   const [userNotFound, setUserNotFound] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const token = localStorage.getItem('jwt');
@@ -55,11 +60,16 @@ const Profile = () => {
 
         // Fetch games
         api
-          .get(`games/${result.data.username}`, {
-            headers: {
-              Authorization: 'Bearer ' + token,
-            },
-          })
+          .get(
+            `games/${result.data.username}`,
+
+            {
+              params: { page },
+              headers: {
+                Authorization: 'Bearer ' + token,
+              },
+            }
+          )
           .then((result) => {
             console.log(result);
             setGames(result.data.games);
@@ -70,7 +80,7 @@ const Profile = () => {
       .catch((e) => {
         setUserNotFound(true);
       });
-  }, []);
+  }, [page]);
 
   const renderRatingChanges = (oldRating, newRating, won) => {
     let ratingDifference = newRating - oldRating;
@@ -132,6 +142,16 @@ const Profile = () => {
       </div>
     );
   }
+
+  const handlePagination = (direction) => {
+    if (direction === 'left' && page > 1) {
+      setPage(page - 1);
+    }
+
+    if (direction === 'right' && games.length === 7) {
+      setPage(page + 1);
+    }
+  };
 
   return (
     <div className='main'>
@@ -218,6 +238,16 @@ const Profile = () => {
               </Row>
             )
           )}
+        </div>
+        <div className='pagination'>
+          <LeftOutlined
+            onClick={() => handlePagination('left')}
+            className='pagination__icon'
+          />{' '}
+          <RightOutlined
+            onClick={() => handlePagination('right')}
+            className='pagination__icon'
+          />
         </div>
       </div>
     </div>
