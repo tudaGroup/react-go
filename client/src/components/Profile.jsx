@@ -22,7 +22,6 @@ const Profile = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('jwt');
-
     // Redirect to login page if user is without token
     if (token === null) {
       history.push('/login');
@@ -38,15 +37,16 @@ const Profile = () => {
         },
       })
       .then((result) => {
-        console.log(result);
-        setUsername(result.data.username);
-        setGivenName(result.data.givenName);
-        setSurName(result.data.surName);
-        setCity(result.data.location);
-        setCountry(result.data.country);
-        setBiography(result.data.biography);
-        setMemberSince(moment(result.data.memberSince).format('LL'));
+        const user = result.data.user;
+        setUsername(user.username);
+        setGivenName(user.givenName);
+        setSurName(user.surName);
+        setCity(user.location);
+        setCountry(user.country);
+        setBiography(user.biography);
+        setMemberSince(moment(user.memberSince).format('LL'));
 
+        // Create graph coordinates for rating graph
         let ratings = [];
         for (let rating of result.data.ratings) {
           ratings.push({ x: new Date(rating.time), y: rating.rating });
@@ -55,7 +55,7 @@ const Profile = () => {
 
         // Fetch games
         api
-          .get(`games/${result.data.username}`, {
+          .get(`games/${user.username}`, {
             headers: {
               Authorization: 'Bearer ' + token,
             },
@@ -69,6 +69,7 @@ const Profile = () => {
       })
       .catch((e) => {
         setUserNotFound(true);
+        console.log(e);
       });
   }, []);
 
