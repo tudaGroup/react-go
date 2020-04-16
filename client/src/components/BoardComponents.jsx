@@ -12,7 +12,8 @@ class Game{
    * @param {Field} field - field to be evaluated scores for
    */
   static getPoints(field, player) {
-    return this.getSpotsOf(field, player).length;
+    console.log(Game.getSpotsOf(field, player));
+    return Game.getSpotsOf(field, player).length;
   }
 
 
