@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import history from '../history';
-import api from '../api';
+import history from '../../history';
+import api from '../../api';
 import moment from 'moment';
 import RatingChart from './RatingChart';
 import { Row, Col } from 'antd';
@@ -59,7 +59,8 @@ const Profile = () => {
         setRatings(ratings);
 
         // Fetch games
-        api.get(
+        api
+          .get(
             `games/${result.data.username}`,
 
             {
@@ -205,7 +206,11 @@ const Profile = () => {
                     <Col>
                       <Row>
                         {time}+{timeIncrement} •{' '}
-                        {size === 9 ? 'SMALL' : size === 13 ? 'MEDIUM' : 'LARGE'}{' '}
+                        {size === 9
+                          ? 'SMALL'
+                          : size === 13
+                          ? 'MEDIUM'
+                          : 'LARGE'}{' '}
                         • {rated ? 'RATED' : 'CASUAL'}
                       </Row>
                       <Row>{moment(timestamp).fromNow()}</Row>

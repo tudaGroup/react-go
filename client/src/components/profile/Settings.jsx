@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import history from '../history';
-import api from '../api';
+import history from '../../history';
+import api from '../../api';
 import { CheckOutlined } from '@ant-design/icons';
 import { Button, Input, Select, Row, Col } from 'antd';
 const { Option } = Select;
@@ -27,10 +27,10 @@ const Settings = () => {
     api
       .get('users/me', {
         headers: {
-          Authorization: 'Bearer ' + token
-        }
+          Authorization: 'Bearer ' + token,
+        },
       })
-      .then(result => {
+      .then((result) => {
         if (result.data.country) {
           setCountry(result.data.country);
         }
@@ -57,8 +57,8 @@ const Settings = () => {
         { country, givenName, surName, biography, location },
         {
           headers: {
-            Authorization: 'Bearer ' + authToken
-          }
+            Authorization: 'Bearer ' + authToken,
+          },
         }
       )
       .then(() => {
@@ -66,7 +66,7 @@ const Settings = () => {
       });
   };
 
-  const handleKeyPress = e => {
+  const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSubmit();
     }
@@ -85,7 +85,7 @@ const Settings = () => {
             <div className='edit__label'>Country</div>
             <Select
               defaultValue={country}
-              onChange={value => setCountry(value)}
+              onChange={(value) => setCountry(value)}
               style={{ width: '50%' }}
             >
               <Option value='Germany'>Germany</Option>
@@ -100,8 +100,8 @@ const Settings = () => {
             <div className='edit__label'>Location</div>
             <Input
               value={location}
-              onChange={e => setLocation(e.target.value)}
-              onKeyPress={e => handleKeyPress(e)}
+              onChange={(e) => setLocation(e.target.value)}
+              onKeyPress={(e) => handleKeyPress(e)}
             />
           </Col>
         </Row>
@@ -110,9 +110,9 @@ const Settings = () => {
             <div className='edit__label'>Biography</div>
             <TextArea
               value={biography}
-              onChange={e => setBiography(e.target.value)}
+              onChange={(e) => setBiography(e.target.value)}
               rows={4}
-              onKeyPress={e => handleKeyPress(e)}
+              onKeyPress={(e) => handleKeyPress(e)}
             />
           </Col>
         </Row>
@@ -121,16 +121,16 @@ const Settings = () => {
             <div className='edit__label'>Given Name</div>
             <Input
               value={givenName}
-              onChange={e => setGivenName(e.target.value)}
-              onKeyPress={e => handleKeyPress(e)}
+              onChange={(e) => setGivenName(e.target.value)}
+              onKeyPress={(e) => handleKeyPress(e)}
             />
           </Col>
           <Col span={12}>
             <div className='edit__label'>Last name</div>
             <Input
               value={surName}
-              onChange={e => setSurName(e.target.value)}
-              onKeyPress={e => handleKeyPress(e)}
+              onChange={(e) => setSurName(e.target.value)}
+              onKeyPress={(e) => handleKeyPress(e)}
             />
           </Col>
         </Row>

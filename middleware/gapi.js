@@ -1,6 +1,6 @@
 const fs = require('fs');
 const readline = require('readline');
-const {google} = require('googleapis');
+const { google } = require('googleapis');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = [
@@ -12,10 +12,10 @@ const SCOPES = [
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = './apisupplements/token.json';
+const TOKEN_PATH = './utils/token.json';
 let auth = getAuthClient();
 
-const gmail = google.gmail({version: 'v1', auth: auth});
+const gmail = google.gmail({ version: 'v1', auth: auth });
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -24,16 +24,19 @@ const gmail = google.gmail({version: 'v1', auth: auth});
  * @param {function} callback The callback to call with the authorized client.
  */
 function getAuthClient() {
-  var credentials = JSON.parse(fs.readFileSync('./apisupplements/credentials.json'));
-  const {client_secret, client_id, redirect_uris} = credentials.installed;
+  var credentials = JSON.parse(fs.readFileSync('./utils/credentials.json'));
+  const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
-      client_id, client_secret, redirect_uris[0]);
+    client_id,
+    client_secret,
+    redirect_uris[0]
+  );
 
   // Check if we have previously stored a token.
   try {
     var token = fs.readFileSync(TOKEN_PATH);
-    oAuth2Client.setCredentials(JSON.parse(token))
-  } catch(err) {
+    oAuth2Client.setCredentials(JSON.parse(token));
+  } catch (err) {
     getNewToken(oAuth2Client);
   }
   return oAuth2Client;
@@ -69,7 +72,6 @@ function getNewToken(oAuth2Client) {
   });
   return oAuth2Client;
 }
-
 
 function sendResetEmail(email, user, link) {
   const subject = 'Password Reset Go';
@@ -112,7 +114,7 @@ function sendEmail(email, msg) {
     'MIME-Version: 1.0',
     `Subject: ${utf8Subject}`,
     '',
-    msg
+    msg,
   ];
   const message = messageParts.join('\n');
   const encodedMessage = Buffer.from(message)
@@ -123,11 +125,10 @@ function sendEmail(email, msg) {
   gmail.users.messages.send({
     userId: 'me',
     requestBody: {
-      raw: encodedMessage
-    }
-  })
+      raw: encodedMessage,
+    },
+  });
 }
-
 
 exports.getAuthClient = getAuthClient;
 exports.sendResetEmail = sendResetEmail;

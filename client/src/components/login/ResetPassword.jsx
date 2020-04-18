@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Button, Card, Input } from 'antd';
-import api from '../api';
-import history from '../history';
+import api from '../../api';
+import history from '../../history';
 
 export default class ResetPassword extends Component {
   constructor() {
@@ -16,7 +16,7 @@ export default class ResetPassword extends Component {
       servererror: false,
       isLoading: true,
       servererrormsg: '',
-      error: ''
+      error: '',
     };
   }
 
@@ -26,19 +26,19 @@ export default class ResetPassword extends Component {
   async componentDidMount() {
     const {
       match: {
-        params: { token }
-      }
+        params: { token },
+      },
     } = this.props;
     try {
       const response = await api
         .get('/users/resetpassword', { params: { token: token } })
-        .catch(err => {
+        .catch((err) => {
           console.log(err.stack);
         });
       if (response.status === 201) {
         this.setState({
           username: response.data.username,
-          isLoading: false
+          isLoading: false,
         });
       } else {
         throw response.data;
@@ -49,22 +49,22 @@ export default class ResetPassword extends Component {
         isLoading: false,
         servererror: true,
         servererrormsg:
-          'Reset Token is invalid. Try again by requesting another password reset.'
+          'Reset Token is invalid. Try again by requesting another password reset.',
       });
     }
   }
 
-  handleChange = name => event => {
+  handleChange = (name) => (event) => {
     this.setState({
-      [name]: event.target.value
+      [name]: event.target.value,
     });
   };
 
   updatePassword() {
     const {
       match: {
-        params: { token }
-      }
+        params: { token },
+      },
     } = this.props;
     if (this.state.password.length < 7) {
       this.setState({ error: 'Password must be at least 7 characters long.' });
@@ -80,31 +80,31 @@ export default class ResetPassword extends Component {
       .patch('/users/resetpassword', {
         username: this.state.username,
         password: this.state.password,
-        token: token
+        token: token,
       })
-      .then(res => {
+      .then((res) => {
         if (res.status === 201) {
           this.setState({ updated: true });
         } else if (res.data === 'TOKENERR') {
           this.setState({
             servererror: true,
             servererrormsg:
-              'Invalid Token. Try again by requesting another password reset!'
+              'Invalid Token. Try again by requesting another password reset!',
           });
         } else if (res.data === 'INVALIDREQUEST') {
           this.setState({
             servererror: true,
-            servererrormsg: 'There is no password request for this user.'
+            servererrormsg: 'There is no password request for this user.',
           });
         } else {
           this.setState({
             servererror: true,
             servererrormsg:
-              'Server Database error. Please try another password reset later.'
+              'Server Database error. Please try another password reset later.',
           });
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err.stack);
       });
   }
@@ -113,7 +113,7 @@ export default class ResetPassword extends Component {
     history.push('/');
   }
 
-  handleKeyPress = event => {
+  handleKeyPress = (event) => {
     if (event.key === 'Enter') {
       this.updatePassword();
     }
@@ -203,7 +203,7 @@ ResetPassword.propTypes = {
   // eslint-disable-next-line react/require-default-props
   match: PropTypes.shape({
     params: PropTypes.shape({
-      token: PropTypes.string.isRequired
-    })
-  })
+      token: PropTypes.string.isRequired,
+    }),
+  }),
 };

@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { Button, Card, Input } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
-import history from '../history';
-import api from '../api';
+import history from '../../history';
+import api from '../../api';
 
 const PasswordResetRequest = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
 
-  const createErrorMessage = error => {
+  const createErrorMessage = (error) => {
     setError(error);
     setTimeout(() => setError(''), 3000);
   };
@@ -21,7 +21,7 @@ const PasswordResetRequest = () => {
     }
     api
       .post('/users/forgotpassword', { email })
-      .then(res => {
+      .then((res) => {
         if (res.data === 'SUCCESS') setSent(true);
         else if (res.data === 'USERNOTFOUND')
           createErrorMessage('Username or Email not found.');
@@ -30,7 +30,7 @@ const PasswordResetRequest = () => {
             'Unknown error occurred. If this keeps happening please contact tudagrouphs@gmail.com.'
           );
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -39,7 +39,7 @@ const PasswordResetRequest = () => {
     history.push('/login');
   };
 
-  const handleKeyPress = event => {
+  const handleKeyPress = (event) => {
     if (event.key === 'Enter') {
       handleReset();
     }
@@ -55,8 +55,8 @@ const PasswordResetRequest = () => {
             Email or Username
             <Input
               value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyPress={e => handleKeyPress(e)}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyPress={(e) => handleKeyPress(e)}
             />
           </div>
           <Button
