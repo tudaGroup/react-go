@@ -8,6 +8,7 @@ import Clock from './Clock';
 import { Row, Col } from 'antd';
 import 'antd/dist/antd.css';
 import Chat from './Chat';
+import { Prompt } from 'react-router';
 
 const msgType = {
   MOVE: 'MOVE',
@@ -123,6 +124,10 @@ class GameWindow extends React.Component {
     this.socket.on('game', this.onGameComm);
     this.socket.on('system', this.onSystemMsg);
     this.init(this.gameData, user1, user2);
+  }
+
+  componentWillUnmount() {
+    this.onForfeit();
   }
 
   init(gameData, user1, user2) {
@@ -913,16 +918,25 @@ class GameWindow extends React.Component {
     if (!this.state.playersConnected)
       return <div>Waiting for players to be connected...</div>;
     return (
-      <div className='gameView'>
-        <div className='gamewindow-header'>
-          <div style={{ padding: '5px' }}>
-            <img src={process.env.PUBLIC_URL + '/ReactGo.png'} alt='React_Go' />
-            ReactGo
+      <React.Fragment>
+        <Prompt
+          when={this.state.winner === null}
+          message='Warning: You lose when leaving the game!'
+        />
+        <div className='gameView'>
+          <div className='gamewindow-header'>
+            <div style={{ padding: '5px' }}>
+              <img
+                src={process.env.PUBLIC_URL + '/ReactGo.png'}
+                alt='React_Go'
+              />
+              ReactGo
+            </div>
           </div>
+          {this.contentView()}
+          {this.gameEnded(this.p1)}
         </div>
-        {this.contentView()}
-        {this.gameEnded(this.p1)}
-      </div>
+      </React.Fragment>
     );
   }
 }
