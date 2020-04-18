@@ -168,12 +168,6 @@ class GameWindow extends React.Component {
           passCount: 0,
         },
       ],
-      availableMoves: Game.updateAvailableMoves.bind(this)(
-        initState,
-        initState,
-        this.p1,
-        this.p2
-      ),
     });
   }
 
@@ -231,6 +225,7 @@ class GameWindow extends React.Component {
   };
 
   onResult = (updatedGame) => {
+    console.log(updatedGame);
     this.newRatingPlayer1 = updatedGame.newRatingPlayer1;
     this.newRatingPlayer2 = updatedGame.newRatingPlayer2;
     this.setState({ waitingForResult: false, showEndWindow: true });
@@ -293,17 +288,41 @@ class GameWindow extends React.Component {
 
   setImmediateWin(player) {
     this.setState({ winner: player, gameEnd: true });
-    this.onWin(player);
+    this.onEnd(player);
   }
 
   processInput = (x, y, player) => {
     if (
       player !== this.state.currentPlayer.props.name ||
-      this.state.gameEnd ||
-      !this.state.availableMoves[y * this.boardSize + x]
+      this.state.gameEnd
     )
       return;
-    this.onNextMove(this.state.availableMoves[y * this.boardSize + x]);
+
+    let playerObject = this.p1.props.name === player ? this.p1 : this.p2;
+
+    let newField = this.state.history[this.state.round].gameState.field.slice();
+    let enemy = this.p1 === playerObject ? this.p2 : this.p1;
+    if (newField[y * this.boardSize + x] !== null)
+      return;
+
+    newField[y * this.boardSize + x] = playerObject;
+    Game.applyRulesBoard.bind(this)(newField, playerObject, enemy);
+
+    
+    if (newField[y * this.boardSize + x] !== playerObject) {
+      alert('Move is suicidal.');
+      return;
+    }
+
+    let prevRound = this.state.round - 1 >= 0 ? this.state.round - 1 : 0;
+    if(newField.equals(this.state.history[prevRound].gameState.field)) {
+      alert('Illegal Ko move.');
+      return;
+    }
+    
+
+
+    this.onNextMove(newField);
     this.broadcastMove(x, y);
   };
 
@@ -316,12 +335,6 @@ class GameWindow extends React.Component {
 
   pass = () => {
     let nextPlayer = this.getNextPlayer();
-    let newMoves = Game.updateAvailableMoves.bind(this)(
-      this.state.history[this.state.round].gameState,
-      this.state.history[this.state.round].gameState,
-      nextPlayer,
-      this.state.currentPlayer
-    );
     let newState = {
       history: this.state.history.slice(0, this.state.round + 1).concat([
         {
@@ -331,7 +344,6 @@ class GameWindow extends React.Component {
       ]),
       round: this.state.round + 1,
       currentPlayer: nextPlayer,
-      availableMoves: newMoves,
     };
     console.log(newState);
     this.updateGame(newState);
@@ -343,23 +355,17 @@ class GameWindow extends React.Component {
   onNextMove = (fields) => {
     const history = this.state.history.slice(0, this.state.round + 1);
 
+    
     let nextPlayer = this.getNextPlayer();
-    let newMoves = Game.updateAvailableMoves.bind(this)(
-      fields,
-      history[this.state.round].gameState,
-      nextPlayer,
-      this.state.currentPlayer
-    );
     let newState = {
       history: history.concat([
         {
-          gameState: fields,
+          gameState: { field: fields, points: { [this.p1.props.name]: Game.getPoints(fields, this.p1), [this.p2.props.name]: Game.getPoints(fields, this.p2) } },
           passCount: 0,
         },
       ]),
       round: history.length,
       currentPlayer: nextPlayer,
-      availableMoves: newMoves,
     };
     this.updateGame(newState);
     console.log(newState.history[newState.round].gameState.points);
@@ -381,7 +387,10 @@ class GameWindow extends React.Component {
   /**
    * won player send results to server, the other player does not do anything
    */
-  onWin = (winner) => {
+  onEnd = (winner) => {
+    if (!winner) {
+      winner = this.p2; // if there is a draw, white wins because of starting disadvantage
+    }
     if (winner.props.name !== this.un) return;
 
     api
@@ -407,11 +416,15 @@ class GameWindow extends React.Component {
       });
   };
 
+
   /**
    * updates game accordingly to new game state(terminates game if passCount >= 2), automatically passes if there are no moves to be made for current player
    * @param {GameState} newState - new game state
    */
   updateGame(newState) {
+    this.setState(newState);
+
+    
     let whoIsWinning = null;
     let newGameState = newState.history[newState.round].gameState;
     if (
@@ -425,7 +438,20 @@ class GameWindow extends React.Component {
     )
       whoIsWinning = this.p2;
 
-    if (newState.availableMoves.length < 1) {
+    if (newState.history[newState.round].passCount >= 2) { // game Ended
+      this.setState({ gameEnd: true, winner: whoIsWinning });
+      this.onEnd(whoIsWinning);
+    }
+  }
+
+
+  detectAnomaly(newState) {
+    let newGameState = newState.history[newState.round].gameState;
+    let enemy = this.p1 === newState.currentPlayer ? this.p2 : this.p1;
+
+    let avMoves = Game.availableMoves(newGameState.field, newState.currentPlayer, enemy);
+
+    if (!avMoves) {
       this.setState(newState);
       if (newState.currentPlayer === this.ownPlayer)
         this.socket.emit('chat', {
@@ -436,11 +462,8 @@ class GameWindow extends React.Component {
           room: this.roomName,
         });
       this.pass();
+      return;
     }
-    if (newState.history[newState.round].passCount >= 2) {
-      this.setState({ ...newState, gameEnd: true, winner: whoIsWinning });
-      this.onWin(whoIsWinning);
-    } else this.setState(newState);
   }
 
   /**
@@ -594,8 +617,7 @@ class GameWindow extends React.Component {
             <Clock
               ref={player === this.p1 ? this.p1ClockRef : this.p2ClockRef}
               isActive={
-                player.props.name === this.state.currentPlayer.props.name &&
-                this.state.round !== 0
+                player.props.name === this.state.currentPlayer.props.name 
               }
               startTime={this.state.time}
               increment={this.state.increment}
@@ -716,7 +738,7 @@ class GameWindow extends React.Component {
                     color: player1gainloss > 0 ? '#1efa4a' : player1gainloss < 0 ? 'red' : 'grey',
                   }}
                 >
-                  ({player1gainloss >= 0 ? '+' + player1gainloss.toString() : player1gainloss === 0 ? '±0' : player1gainloss })
+                  ({player1gainloss > 0 ? '+' + player1gainloss.toString() : player1gainloss === 0 ? '±0' : player1gainloss })
                 </span>
               </p>
               <p>Time left: {this.p1ClockRef.current.state.minutes.toString() + ':' + this.p1ClockRef.current.state.seconds.toString() } </p>
@@ -803,5 +825,34 @@ class GameWindow extends React.Component {
     );
   }
 }
+
+
+// Warn if overriding existing method
+if (Array.prototype.equals)
+  console.warn(
+    "Overriding existing Array.prototype.equals. Possible causes: New API defines the method, there's a framework conflict or you've got double inclusions in your code."
+  );
+// attach the .equals method to Array's prototype to call it on any array
+Array.prototype.equals = function(array) {
+  // if the other array is a falsy value, return
+  if (!array) return false;
+
+  // compare lengths - can save a lot of time
+  if (this.length != array.length) return false;
+
+  for (var i = 0, l = this.length; i < l; i++) {
+    // Check if we have nested arrays
+    if (this[i] instanceof Array && array[i] instanceof Array) {
+      // recurse into the nested arrays
+      if (!this[i].equals(array[i])) return false;
+    } else if (this[i] != array[i]) {
+      // Warning - two different object instances will never be equal: {x:20} != {x:20}
+      return false;
+    }
+  }
+  return true;
+};
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, 'equals', { enumerable: false });
 
 export default GameWindow;
