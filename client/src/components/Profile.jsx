@@ -205,7 +205,7 @@ const Profile = () => {
                     <Col>
                       <Row>
                         {time}+{timeIncrement} •{' '}
-                        {size == 9 ? 'SMALL' : size == 13 ? 'MEDIUM' : 'LARGE'}{' '}
+                        {size === 9 ? 'SMALL' : size === 13 ? 'MEDIUM' : 'LARGE'}{' '}
                         • {rated ? 'RATED' : 'CASUAL'}
                       </Row>
                       <Row>{moment(timestamp).fromNow()}</Row>

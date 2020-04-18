@@ -67,7 +67,7 @@ io.on('connection', socket => {
   });
 
   socket.on('game', data => {
-    io.to(data.room).emit('game', data.message);
+    io.to(data.room).emit('game', {...data.message, time: new Date()});
   });
 
   socket.on('chat', data => {

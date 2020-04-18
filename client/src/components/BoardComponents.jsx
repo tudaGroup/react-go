@@ -12,7 +12,6 @@ class Game{
    * @param {Field} field - field to be evaluated scores for
    */
   static getPoints(field, player) {
-    console.log(Game.getSpotsOf(field, player));
     return Game.getSpotsOf(field, player).length;
   }
 
@@ -67,7 +66,7 @@ class Game{
       if (newField[offset] !== player)
         // suicidal move
         return;
-      if (newField.equals(oldState.field))
+      if (this.arrequals(newField, oldState.field))
         // recurring moves
         return;
       let recursiveResult = Game.emulateGame.bind(this)(
@@ -217,6 +216,26 @@ class Game{
     return [found, alreadySearchedPositions];
   }
 
+  arrequals = function(array1, array2) {
+    // if the other array is a falsy value, return
+    if (!array2) return false;
+  
+    // compare lengths - can save a lot of time
+    if (array1.length !== array2.length) return false;
+  
+    for (var i = 0, l = array1.length; i < l; i++) {
+      // Check if we have nested arrays
+      if (array1[i] instanceof Array && array2[i] instanceof Array) {
+        // recurse into the nested arrays
+        if (!array1[i].equals(array2[i])) return false;
+      } else if (array1[i] !== array2[i]) {
+        // Warning - two different object instances will never be equal: {x:20} != {x:20}
+        return false;
+      }
+    }
+    return true;
+  };
+
 }
 
 /**
@@ -250,6 +269,7 @@ class Board extends Component {
             {field.map(function(who, i) {
               return (
                 <Field
+                  key={'field' + i}
                   x={Math.floor(i % boardSize)}
                   y={Math.floor(i / boardSize)}
                   fieldSize={fieldSize}
@@ -360,32 +380,6 @@ class Player extends Component {
   }
 }
 
-// Warn if overriding existing method
-if (Array.prototype.equals)
-  console.warn(
-    "Overriding existing Array.prototype.equals. Possible causes: New API defines the method, there's a framework conflict or you've got double inclusions in your code."
-  );
-// attach the .equals method to Array's prototype to call it on any array
-Array.prototype.equals = function(array) {
-  // if the other array is a falsy value, return
-  if (!array) return false;
 
-  // compare lengths - can save a lot of time
-  if (this.length != array.length) return false;
-
-  for (var i = 0, l = this.length; i < l; i++) {
-    // Check if we have nested arrays
-    if (this[i] instanceof Array && array[i] instanceof Array) {
-      // recurse into the nested arrays
-      if (!this[i].equals(array[i])) return false;
-    } else if (this[i] != array[i]) {
-      // Warning - two different object instances will never be equal: {x:20} != {x:20}
-      return false;
-    }
-  }
-  return true;
-};
-// Hide method from for-in loops
-Object.defineProperty(Array.prototype, 'equals', { enumerable: false });
 
 export { Game, Player, Board };

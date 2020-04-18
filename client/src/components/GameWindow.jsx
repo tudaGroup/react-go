@@ -5,7 +5,7 @@ import api from '../api';
 import socketIOClient from 'socket.io-client';
 import { Game, Player, Board } from './BoardComponents';
 import Clock from './Clock';
-import { Row, Col, Modal, Button } from 'antd';
+import { Row, Col } from 'antd';
 import 'antd/dist/antd.css';
 import Chat from './Chat';
 
@@ -61,7 +61,6 @@ class GameWindow extends React.Component {
   }
 
   async componentDidMount() {
-    let boardToScreenRatio = 0.8;
     this.token = localStorage.getItem('jwt');
 
     // Redirect to login page if user is without token
@@ -123,12 +122,10 @@ class GameWindow extends React.Component {
 
     this.socket.on('game', this.onGameComm);
     this.socket.on('system', this.onSystemMsg);
-    console.log(this.p1);
     this.init(this.gameData, user1, user2);
   }
 
   init(gameData, user1, user2) {
-    console.log(gameData);
     this.p1 = (
       <Player
         name={gameData.data.player1}
@@ -179,7 +176,6 @@ class GameWindow extends React.Component {
    * @param {Message} msg - a system Message received
    */
   onSystemMsg = (msg) => {
-    console.log(msg);
     if (msg.type === 'DISCONNECT') {
       this.socket.emit('chat', {
         data: { user: 'System', msg: `${msg.user} has disconnected.` },
@@ -188,8 +184,9 @@ class GameWindow extends React.Component {
       this.onDisconnect(msg.user);
     } else if (msg.type === 'JOIN') {
       // this.socket.emit('chat', { data: { user: 'System', msg: `${msg.user} has joined the room.` }, room: this.roomName });
-    } else if (msg.type === 'CONNECTION_ESTABLISHED')
+    } else if (msg.type === 'CONNECTION_ESTABLISHED') {
       this.setState({ playersConnected: true });
+    }
   };
 
   /**
@@ -225,7 +222,6 @@ class GameWindow extends React.Component {
   };
 
   onResult = (updatedGame) => {
-    console.log(updatedGame);
     this.newRatingPlayer1 = updatedGame.newRatingPlayer1;
     this.newRatingPlayer2 = updatedGame.newRatingPlayer2;
     this.setState({ waitingForResult: false, showEndWindow: true });
@@ -315,7 +311,7 @@ class GameWindow extends React.Component {
     }
 
     let prevRound = this.state.round - 1 >= 0 ? this.state.round - 1 : 0;
-    if(newField.equals(this.state.history[prevRound].gameState.field)) {
+    if(this.arrequals(newField, this.state.history[prevRound].gameState.field)) {
       alert('Illegal Ko move.');
       return;
     }
@@ -345,7 +341,6 @@ class GameWindow extends React.Component {
       round: this.state.round + 1,
       currentPlayer: nextPlayer,
     };
-    console.log(newState);
     this.updateGame(newState);
   };
 
@@ -368,7 +363,6 @@ class GameWindow extends React.Component {
       currentPlayer: nextPlayer,
     };
     this.updateGame(newState);
-    console.log(newState.history[newState.round].gameState.points);
   };
 
   getNextPlayer() {
@@ -404,7 +398,6 @@ class GameWindow extends React.Component {
         }
       )
       .then((res) => {
-        console.log(res);
         this.socket.emit('game', {
           message: { type: msgType.RESULT, data: res.data },
           room: this.roomName,
@@ -593,6 +586,7 @@ class GameWindow extends React.Component {
             <div className='infoboxicon'>
               <img
                 src={process.env.PUBLIC_URL + '/rank_sym.png'}
+                alt='rank_sym'
                 className='sicon'
               />
             </div>
@@ -609,6 +603,7 @@ class GameWindow extends React.Component {
             <div className='infoboxicon'>
               <img
                 src={process.env.PUBLIC_URL + '/time_icon.png'}
+                alt='time_icon'
                 className='sicon'
               />
             </div>
@@ -652,7 +647,6 @@ class GameWindow extends React.Component {
    * renders the content view(the board and the info / chat)
    */
   contentView = () => {
-    let newHeight = this.state.canvasSize * 0.7;
     return (
       <div
         style={{
@@ -683,7 +677,7 @@ class GameWindow extends React.Component {
             padding: '20px',
             backgroundColor: '#262320',
             borderRadius: '10px',
-            height: `${this.state.canvasSize * 0.7}px`,
+            minHeight: `${this.state.canvasSize * 0.7}px`,
           }}
         >
           {this.displayInfo()}
@@ -774,7 +768,6 @@ class GameWindow extends React.Component {
   onResize = () => {
     let newSize = this.getNewCanvasSize();
     this.setState({ canvasSize: newSize });
-    if (this.g) this.g.setCanvasSize(newSize);
   };
 
   /**
@@ -806,8 +799,30 @@ class GameWindow extends React.Component {
     this.setState({ boardToScreenRatio: this.state.boardToScreenRatio - 0.1 });
   };
 
+  /**
+   * equals function for arrays
+   */
+  arrequals = function(array1, array2) {
+    // if the other array is a falsy value, return
+    if (!array2) return false;
+  
+    // compare lengths - can save a lot of time
+    if (array1.length !== array2.length) return false;
+  
+    for (var i = 0, l = array1.length; i < l; i++) {
+      // Check if we have nested arrays
+      if (array1[i] instanceof Array && array2[i] instanceof Array) {
+        // recurse into the nested arrays
+        if (!array1[i].equals(array2[i])) return false;
+      } else if (array1[i] !== array2[i]) {
+        // Warning - two different object instances will never be equal: {x:20} != {x:20}
+        return false;
+      }
+    }
+    return true;
+  };
+
   render() {
-    console.log(this.state);
     if (this.state.loading) return null;
     if (!this.state.playersConnected)
       return <div>Waiting for players to be connected...</div>;
@@ -815,7 +830,7 @@ class GameWindow extends React.Component {
       <div className='gameView'>
         <div className='gamewindow-header'>
           <div style={{ padding: '5px' }}>
-            <img src={process.env.PUBLIC_URL + '/ReactGo.png'} />
+            <img src={process.env.PUBLIC_URL + '/ReactGo.png'} alt='React_Go' />
             ReactGo
           </div>
         </div>
@@ -827,32 +842,6 @@ class GameWindow extends React.Component {
 }
 
 
-// Warn if overriding existing method
-if (Array.prototype.equals)
-  console.warn(
-    "Overriding existing Array.prototype.equals. Possible causes: New API defines the method, there's a framework conflict or you've got double inclusions in your code."
-  );
-// attach the .equals method to Array's prototype to call it on any array
-Array.prototype.equals = function(array) {
-  // if the other array is a falsy value, return
-  if (!array) return false;
 
-  // compare lengths - can save a lot of time
-  if (this.length != array.length) return false;
-
-  for (var i = 0, l = this.length; i < l; i++) {
-    // Check if we have nested arrays
-    if (this[i] instanceof Array && array[i] instanceof Array) {
-      // recurse into the nested arrays
-      if (!this[i].equals(array[i])) return false;
-    } else if (this[i] != array[i]) {
-      // Warning - two different object instances will never be equal: {x:20} != {x:20}
-      return false;
-    }
-  }
-  return true;
-};
-// Hide method from for-in loops
-Object.defineProperty(Array.prototype, 'equals', { enumerable: false });
 
 export default GameWindow;
