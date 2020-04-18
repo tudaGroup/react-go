@@ -149,7 +149,7 @@ const Profile = () => {
       setPage(page - 1);
     }
 
-    if (direction === 'right' && games.length === 7) {
+    if (direction === 'right' && page * 7 < wins + losses) {
       setPage(page + 1);
     }
   };

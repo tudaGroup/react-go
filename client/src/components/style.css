@@ -67,11 +67,11 @@ h6 {
   margin-left: auto;
   margin-right: auto;
   margin-top: 30px;
-  width: 12%;
+  width: 9%;
 }
 
 .pagination__icon {
-  font-size: 2vw;
+  font-size: 1.8vw;
   margin: 0 5px;
   transition: color 0.5s ease;
 }

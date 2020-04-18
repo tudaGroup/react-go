@@ -51,33 +51,26 @@ router.get('/games/active', auth, async (req, res) => {
 
 // Return all games of a given player
 router.get('/games/:player', auth, async (req, res) => {
-  const limit = 7;
-  const skip = (req.query.page - 1) * limit;
-
   let player = req.params.player;
   console.log(player);
   let games = await Game.find({
     $or: [{ player1: player }, { player2: player }],
-  })
-    .sort({ _id: -1 })
-    .skip(skip)
-    .limit(limit);
+  }).sort({ _id: -1 });
 
-  console.log('games:');
-  console.log(games);
-
+  // Determine total game, win and lost count
   let wins = games.filter((game) => {
-    console.log(
-      (game.player1 === player && game.player1Won) ||
-        (game.player1 !== player && !game.player1Won)
-    );
     return (
       (game.player1 === player && game.player1Won) ||
       (game.player1 !== player && !game.player1Won)
     );
   }).length;
-  console.log(wins);
   let losses = games.length - wins;
+
+  // Pagination
+  const limit = 7;
+  const skip = (req.query.page - 1) * limit;
+  games = games.slice(skip, skip + 7);
+
   res.send({ games, wins, losses });
 });
 
