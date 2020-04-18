@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Card, Input } from 'antd';
-import api from '../api';
-import history from '../history';
+import api from '../../api';
+import history from '../../history';
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -19,23 +19,23 @@ const Register = () => {
 
     api
       .post('/users', { username, email, password })
-      .then(res => {
+      .then((res) => {
         localStorage.setItem('jwt', res.data.token);
         history.push('/');
       })
-      .catch(error => {
+      .catch((error) => {
         createErrorMessage('Username or email not available.');
         console.log(error);
       });
   };
 
-  const handleKeyPress = event => {
+  const handleKeyPress = (event) => {
     if (event.key === 'Enter') {
       handleRegister();
     }
   };
 
-  const createErrorMessage = error => {
+  const createErrorMessage = (error) => {
     setError(error);
     setTimeout(() => setError(''), 3000);
   };
@@ -49,24 +49,24 @@ const Register = () => {
           User name
           <Input
             value={username}
-            onChange={e => setUsername(e.target.value)}
-            onKeyPress={e => handleKeyPress(e)}
+            onChange={(e) => setUsername(e.target.value)}
+            onKeyPress={(e) => handleKeyPress(e)}
           />
         </div>
         <div className='entry__input'>
           Password
           <Input.Password
             value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyPress={e => handleKeyPress(e)}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={(e) => handleKeyPress(e)}
           />
         </div>
         <div className='entry__input'>
           Email
           <Input
             value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyPress={e => handleKeyPress(e)}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyPress={(e) => handleKeyPress(e)}
           />
         </div>
         <Button

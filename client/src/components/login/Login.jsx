@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Card, Input } from 'antd';
 import { Link } from 'react-router-dom';
-import history from '../history';
-import api from '../api';
+import history from '../../history';
+import api from '../../api';
 
 const Login = () => {
   const [name, setName] = useState('');

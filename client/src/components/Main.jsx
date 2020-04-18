@@ -269,7 +269,7 @@ const Main = () => {
             </Row>
           </div>
         ))}
-        <div id='challenge_create'>
+        <div className='button'>
           <Button
             type='primary'
             style={{

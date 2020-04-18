@@ -1,13 +1,14 @@
 import React from 'react';
 import jwt_decode from 'jwt-decode';
-import history from '../history';
-import api from '../api';
+import history from '../../history';
+import api from '../../api';
 import socketIOClient from 'socket.io-client';
 import { Game, Player, Board } from './BoardComponents';
 import Clock from './Clock';
-import { Row, Col } from 'antd';
+import { Row, Col, Button } from 'antd';
 import 'antd/dist/antd.css';
 import Chat from './Chat';
+import { Prompt } from 'react-router';
 
 const msgType = {
   MOVE: 'MOVE',
@@ -49,6 +50,7 @@ class GameWindow extends React.Component {
       winner: null,
       gameEnd: false,
       loading: true,
+      rated: false,
 
       boardToScreenRatio: 0.85,
       chatbuffer: [],
@@ -97,6 +99,10 @@ class GameWindow extends React.Component {
       return;
     }
 
+    this.setState({ rated: this.gameData.data.rated });
+
+    console.log(this.gameData);
+
     const user1 = await api.get(`users/${pl1}`, {
       headers: {
         Authorization: 'Bearer ' + this.token,
@@ -123,6 +129,10 @@ class GameWindow extends React.Component {
     this.socket.on('game', this.onGameComm);
     this.socket.on('system', this.onSystemMsg);
     this.init(this.gameData, user1, user2);
+  }
+
+  componentWillUnmount() {
+    this.onForfeit();
   }
 
   init(gameData, user1, user2) {
@@ -193,7 +203,7 @@ class GameWindow extends React.Component {
    * @param {User} user - disconnected user
    */
   onDisconnect = (user) => {
-    if(this.state.gameEnd) return;
+    if (this.state.gameEnd) return;
     if (user === this.p1.props.name) this.setImmediateWin(this.p2);
     else if (user === this.p2.props.name) this.setImmediateWin(this.p1);
   };
@@ -203,7 +213,7 @@ class GameWindow extends React.Component {
    */
   onGameComm = (msg) => {
     console.log(msg);
-    console.log(this.state)
+    console.log(this.state);
     if (msg.sender === this.un) return;
     if (msg.type === msgType.MOVE) {
       this.processInput(msg.x, msg.y, msg.sender);
@@ -288,43 +298,37 @@ class GameWindow extends React.Component {
   }
 
   processInput = (x, y, player) => {
-    if (
-      player !== this.state.currentPlayer.props.name ||
-      this.state.gameEnd
-    )
+    if (player !== this.state.currentPlayer.props.name || this.state.gameEnd)
       return;
 
     let playerObject = this.p1.props.name === player ? this.p1 : this.p2;
 
     let newField = this.state.history[this.state.round].gameState.field.slice();
     let enemy = this.p1 === playerObject ? this.p2 : this.p1;
-    if (newField[y * this.boardSize + x] !== null)
-      return;
+    if (newField[y * this.boardSize + x] !== null) return;
 
     newField[y * this.boardSize + x] = playerObject;
     Game.applyRulesBoard.bind(this)(newField, playerObject, enemy);
 
-    
     if (newField[y * this.boardSize + x] !== playerObject) {
       alert('Move is suicidal.');
       return;
     }
 
     let prevRound = this.state.round - 1 >= 0 ? this.state.round - 1 : 0;
-    if(this.arrequals(newField, this.state.history[prevRound].gameState.field)) {
+    if (
+      this.arrequals(newField, this.state.history[prevRound].gameState.field)
+    ) {
       alert('Illegal Ko move.');
       return;
     }
-    
-
 
     this.onNextMove(newField);
     this.broadcastMove(x, y);
   };
 
   handlePass = (player) => {
-    if (player !== this.state.currentPlayer || this.state.gameEnd)
-      return;
+    if (player !== this.state.currentPlayer || this.state.gameEnd) return;
     this.pass();
     this.broadcastPass();
   };
@@ -350,12 +354,17 @@ class GameWindow extends React.Component {
   onNextMove = (fields) => {
     const history = this.state.history.slice(0, this.state.round + 1);
 
-    
     let nextPlayer = this.getNextPlayer();
     let newState = {
       history: history.concat([
         {
-          gameState: { field: fields, points: { [this.p1.props.name]: Game.getPoints(fields, this.p1), [this.p2.props.name]: Game.getPoints(fields, this.p2) } },
+          gameState: {
+            field: fields,
+            points: {
+              [this.p1.props.name]: Game.getPoints(fields, this.p1),
+              [this.p2.props.name]: Game.getPoints(fields, this.p2),
+            },
+          },
           passCount: 0,
         },
       ]),
@@ -409,7 +418,6 @@ class GameWindow extends React.Component {
       });
   };
 
-
   /**
    * updates game accordingly to new game state(terminates game if passCount >= 2), automatically passes if there are no moves to be made for current player
    * @param {GameState} newState - new game state
@@ -417,7 +425,6 @@ class GameWindow extends React.Component {
   updateGame(newState) {
     this.setState(newState);
 
-    
     let whoIsWinning = null;
     let newGameState = newState.history[newState.round].gameState;
     if (
@@ -431,18 +438,22 @@ class GameWindow extends React.Component {
     )
       whoIsWinning = this.p2;
 
-    if (newState.history[newState.round].passCount >= 2) { // game Ended
+    if (newState.history[newState.round].passCount >= 2) {
+      // game Ended
       this.setState({ gameEnd: true, winner: whoIsWinning });
       this.onEnd(whoIsWinning);
     }
   }
 
-
   detectAnomaly(newState) {
     let newGameState = newState.history[newState.round].gameState;
     let enemy = this.p1 === newState.currentPlayer ? this.p2 : this.p1;
 
-    let avMoves = Game.availableMoves(newGameState.field, newState.currentPlayer, enemy);
+    let avMoves = Game.availableMoves(
+      newGameState.field,
+      newState.currentPlayer,
+      enemy
+    );
 
     if (!avMoves) {
       this.setState(newState);
@@ -460,42 +471,7 @@ class GameWindow extends React.Component {
   }
 
   /**
-   * rendering stuff
-   */
-
-  /**
-   * display game info
-   */
-  gameInfo = () => {
-    return (
-      <div
-        className='infobox'
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '20px',
-        }}
-      >
-        <div
-          style={{
-            borderRadius: '50%',
-            border: '0',
-            backgroundColor: this.state.currentPlayer
-              ? this.state.currentPlayer.props.playerColor
-              : 'purple',
-            width: '20px',
-            height: '20px',
-          }}
-        ></div>
-        <div>Round {this.state.round + 1}</div>
-      </div>
-    );
-  };
-
-  /**
    * Renders a image of flag of given country(default US)
-   * Grabbbed from Profile.jsx
    */
   renderFlag = (country) => {
     let altText, countryID;
@@ -612,7 +588,7 @@ class GameWindow extends React.Component {
             <Clock
               ref={player === this.p1 ? this.p1ClockRef : this.p2ClockRef}
               isActive={
-                player.props.name === this.state.currentPlayer.props.name 
+                player.props.name === this.state.currentPlayer.props.name
               }
               startTime={this.state.time}
               increment={this.state.increment}
@@ -646,63 +622,70 @@ class GameWindow extends React.Component {
   /**
    * renders the content view(the board and the info / chat)
    */
-  contentView = () => {
+  renderContentView = () => {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <div ref={(el) => (this.gameView = el)} className='boardview'>
-          <Board
-            boardSize={this.boardSize}
-            onClick={(x, y) => this.processInput(x, y, this.un)}
-            currField={this.state.history[this.state.round].gameState.field}
-            currPlayer={this.state.currentPlayer}
-            boardHW={this.state.canvasSize}
-          />
-        </div>
-        <div
-          ref={(el) => (this.infoview = el)}
-          style={{
-            margin: '30px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignContent: 'center',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-            backgroundColor: '#262320',
-            borderRadius: '10px',
-            minHeight: `${this.state.canvasSize * 0.7}px`,
-          }}
-        >
-          {this.displayInfo()}
-          <Chat
-            user={this.un}
-            socket={this.socket}
-            roomName={this.roomName}
-            customButtons={
-              this.ownPlayer !== null
-                ? [
-                    { label: 'Pass', onClick: () => this.handlePass(this.ownPlayer) },
-                    { label: 'Forfeit', onClick: this.onForfeit },
-                  ]
-                : []
-            }
-          />
-        </div>
+      <div>
+        <Row>
+          <Col span={12}>
+            <div ref={(el) => (this.gameView = el)} className='boardview'>
+              <Board
+                boardSize={this.boardSize}
+                onClick={(x, y) => this.processInput(x, y, this.un)}
+                currField={this.state.history[this.state.round].gameState.field}
+                currPlayer={this.state.currentPlayer}
+                boardHW={this.state.canvasSize}
+              />
+            </div>
+          </Col>
+          <Col>
+            <div
+              ref={(el) => (this.infoview = el)}
+              style={{
+                margin: '30px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignContent: 'center',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px',
+                backgroundColor: '#262320',
+                borderRadius: '10px',
+                minHeight: `${this.state.canvasSize * 0.7}px`,
+              }}
+            >
+              {this.displayInfo()}
+              <Chat
+                user={this.un}
+                socket={this.socket}
+                roomName={this.roomName}
+                customButtons={
+                  this.ownPlayer !== null
+                    ? [
+                        {
+                          label: 'Pass',
+                          onClick: () => this.handlePass(this.ownPlayer),
+                        },
+                        { label: 'Forfeit', onClick: this.onForfeit },
+                      ]
+                    : []
+                }
+              />
+            </div>
+          </Col>
+        </Row>
       </div>
     );
   };
 
+  pad(num) {
+    return num < 10 ? '0' + num : num;
+  }
 
   gameEnded = () => {
-    let player1gainloss = this.newRatingPlayer1 - this.gameData.data.oldRatingPlayer1;
-    let player2gainloss = this.newRatingPlayer2 - this.gameData.data.oldRatingPlayer2;
+    let player1gainloss =
+      this.newRatingPlayer1 - this.gameData.data.oldRatingPlayer1;
+    let player2gainloss =
+      this.newRatingPlayer2 - this.gameData.data.oldRatingPlayer2;
 
     if (this.state.showEndWindow)
       return (
@@ -719,44 +702,67 @@ class GameWindow extends React.Component {
             backgroundColor: 'rgba(0, 0, 0, 0.6)',
           }}
         >
-          <div className='endGamePopup'
-          >
-          <p style={{ textAlign: 'center', marginTop: 0, }}>
-              {this.ownPlayer === null ? 'Game ended' : this.ownPlayer === this.state.winner ? 'Victory' : 'Defeat'}
-          </p>
-          <div className='endGamePopUpPlayer' style={{ backgroundColor: 'black'}}>
-            <div style={{ textAlign: 'center', marginBottom: '10px',  textDecoration: 'underline' }}>{this.p1.props.name}</div>
-            <div style={{ fontSize: '22px'}}>
-              <p>Points: {this.newRatingPlayer1} <span
-                  style={{
-                    color: player1gainloss > 0 ? '#1efa4a' : player1gainloss < 0 ? 'red' : 'grey',
-                  }}
-                >
-                  ({player1gainloss > 0 ? '+' + player1gainloss.toString() : player1gainloss === 0 ? '±0' : player1gainloss })
-                </span>
+          <div className='endgame__popup'>
+            <p style={{ textAlign: 'center', marginTop: 0 }}>
+              {this.ownPlayer === null ? (
+                'Game ended'
+              ) : this.ownPlayer === this.state.winner ? (
+                <span style={{ color: '#629923' }}>You won.</span>
+              ) : (
+                <span style={{ color: '#CC3233' }}>You lost.</span>
+              )}
+            </p>
+            {this.ownPlayer === this.p1 ? (
+              <p className='endgame__info'>
+                <div>New rating: {this.newRatingPlayer1} </div>
+                <div>
+                  Time left:{' '}
+                  {this.pad(this.p1ClockRef.current.state.minutes) +
+                    ':' +
+                    this.pad(this.p1ClockRef.current.state.seconds)}{' '}
+                </div>
+                <div>
+                  Game score:{' '}
+                  {
+                    this.state.history[this.state.round].gameState.points[
+                      this.p1.props.name
+                    ]
+                  }
+                </div>
               </p>
-              <p>Time left: {this.p1ClockRef.current.state.minutes.toString() + ':' + this.p1ClockRef.current.state.seconds.toString() } </p>
-              <p>Score: {this.state.history[this.state.round].gameState.points[this.p1.props.name]}</p>
-            </div>
-          </div>
-          <div className='endGamePopUpPlayer'style={{ backgroundColor: 'white', color: 'black ' }}>
-            <div style={{ textAlign: 'center', marginBottom: '10px',  textDecoration: 'underline' }}>{this.p2.props.name}</div>
-            <div style={{ fontSize: '22px'}}>
-              <p>Points: {this.newRatingPlayer2} <span
-                  style={{
-                    color: player2gainloss > 0 ? '#1efa4a' : player2gainloss < 0 ? 'red' : 'grey',
-                  }}
-                >
-                  ({player2gainloss > 0 ? '+' + player2gainloss.toString() : player2gainloss === 0 ? '±0' : player2gainloss })
-                </span>
+            ) : (
+              <p className='endgame__info'>
+                <div>New rating: {this.newRatingPlayer2} </div>
+                <div>
+                  Time left:{' '}
+                  {this.pad(this.p2ClockRef.current.state.minutes) +
+                    ':' +
+                    this.pad(this.p2ClockRef.current.state.seconds)}
+                </div>
+                <div>
+                  Game score:{' '}
+                  {
+                    this.state.history[this.state.round].gameState.points[
+                      this.p2.props.name
+                    ]
+                  }
+                </div>
               </p>
-              <p>Time left: {this.p2ClockRef.current.state.minutes.toString() + ':' + this.p2ClockRef.current.state.seconds.toString() } </p>
-              <p>Score: {this.state.history[this.state.round].gameState.points[this.p2.props.name]}</p>
+            )}
+            <div className='button'>
+              <Button
+                type='primary'
+                style={{
+                  marginTop: '15px',
+                }}
+                onClick={() => {
+                  history.push('/');
+                  window.location.reload();
+                }}
+              >
+                Back to Waiting Room
+              </Button>
             </div>
-          </div>
-            <button className='popupbutton' onClick={() => { history.push('/'); window.location.reload()}}>
-              Back to Waiting Room
-            </button>
           </div>
         </div>
       );
@@ -783,7 +789,6 @@ class GameWindow extends React.Component {
         }}
       >
         {this.playerInfo(this.p1)}
-        {this.gameInfo()}
         {this.playerInfo(this.p2)}
       </div>
     );
@@ -802,13 +807,13 @@ class GameWindow extends React.Component {
   /**
    * equals function for arrays
    */
-  arrequals = function(array1, array2) {
+  arrequals = function (array1, array2) {
     // if the other array is a falsy value, return
     if (!array2) return false;
-  
+
     // compare lengths - can save a lot of time
     if (array1.length !== array2.length) return false;
-  
+
     for (var i = 0, l = array1.length; i < l; i++) {
       // Check if we have nested arrays
       if (array1[i] instanceof Array && array2[i] instanceof Array) {
@@ -827,21 +832,27 @@ class GameWindow extends React.Component {
     if (!this.state.playersConnected)
       return <div>Waiting for players to be connected...</div>;
     return (
-      <div className='gameView'>
-        <div className='gamewindow-header'>
-          <div style={{ padding: '5px' }}>
-            <img src={process.env.PUBLIC_URL + '/ReactGo.png'} alt='React_Go' />
-            ReactGo
+      <React.Fragment>
+        <Prompt
+          when={this.state.winner === null}
+          message='Warning: You lose when leaving the game!'
+        />
+        <div className='gameView'>
+          <div className='gamewindow-header'>
+            <div style={{ padding: '5px' }}>
+              <img
+                src={process.env.PUBLIC_URL + '/ReactGo.png'}
+                alt='React_Go'
+              />
+              ReactGo
+            </div>
           </div>
+          {this.renderContentView()}
+          {this.gameEnded(this.p1)}
         </div>
-        {this.contentView()}
-        {this.gameEnded(this.p1)}
-      </div>
+      </React.Fragment>
     );
   }
 }
-
-
-
 
 export default GameWindow;
