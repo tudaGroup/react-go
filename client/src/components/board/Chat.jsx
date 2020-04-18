@@ -121,20 +121,20 @@ class Chat extends Component {
             {this.props.customButtons
               ? this.props.customButtons.map((customButton) => {
                   return (
-                    <Button
+                    <button
                       key={customButton.label}
                       className='chatboxbutton'
                       style={{ backgroundColor: '#34e346' }}
                       onClick={customButton.onClick}
                     >
                       {customButton.label}
-                    </Button>
+                    </button>
                   );
                 })
               : null}
-            <Button className='chatboxbutton' onClick={this.sendMessage}>
+            <button className='chatboxbutton' onClick={this.sendMessage}>
               <div>Send</div>
-            </Button>
+            </button>
           </div>
         </div>
       </div>

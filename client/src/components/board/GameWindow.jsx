@@ -204,8 +204,8 @@ class GameWindow extends React.Component {
    */
   onDisconnect = (user) => {
     if (this.state.gameEnd) return;
-    if (user === this.p1.props.name) this.setImmediateWin(this.p2);
-    else if (user === this.p2.props.name) this.setImmediateWin(this.p1);
+    if (user === this.p1.props.name) this.gameHasEnded(this.state, this.p2);
+    else if (user === this.p2.props.name) this.gameHasEnded(this.state, this.p1);
   };
 
   /**
@@ -221,7 +221,7 @@ class GameWindow extends React.Component {
       this.pass(msg.sender);
     } else if (msg.type === msgType.FORFEIT) {
       let winner = msg.sender === this.p1.props.name ? this.p2 : this.p1;
-      this.setImmediateWin(winner);
+      this.gameHasEnded(this.state, winner);
     } else if (
       msg.type === msgType.RESULT &&
       this.state.gameEnd &&
@@ -385,7 +385,7 @@ class GameWindow extends React.Component {
 
   onForfeit = () => {
     if (!this.ownPlayer || this.state.gameEnd) return;
-    this.setImmediateWin(this.ownPlayer === this.p1 ? this.p2 : this.p1);
+    this.gameHasEnded(this.state, this.ownPlayer === this.p1 ? this.p2 : this.p1);
     this.socket.emit('game', {
       message: { type: msgType.FORFEIT, sender: this.ownPlayer.props.name },
       room: this.roomName,
@@ -402,7 +402,7 @@ class GameWindow extends React.Component {
 
     if (newState.history[newState.round].passCount >= 2) {
       // game Ended
-      this.setImmediateWin(newState);
+      this.gameHasEnded(newState);
     }
   }
 
@@ -428,7 +428,7 @@ class GameWindow extends React.Component {
     this.setState({ gameEnd: true, winner:  whoIsWinning});
 
 
-    if (!whoIsWinning) {
+    if (whoIsWinning === null) {
       whoIsWinning = this.p2; // if there is a draw, white wins because of starting disadvantage
     }
     if (whoIsWinning.props.name !== this.un) return;
