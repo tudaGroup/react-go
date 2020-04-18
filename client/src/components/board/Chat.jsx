@@ -41,9 +41,12 @@ class Chat extends Component {
 
   displayMsg = (msg) => {
     return (
-      <p style={{ minWidth: '100%', width: 0 }}>
-        [{msg.user}]: {msg.msg}
-      </p>
+      <div>
+        <p className='chat__message'>
+          <div className='chat__message__user'>{msg.user}</div>
+          <div>{msg.msg}</div>
+        </p>
+      </div>
     );
   };
 
@@ -82,21 +85,18 @@ class Chat extends Component {
             width: '100%',
             borderRadius: '10px',
             height: '100%',
-            overflow: 'hidden',
           }}
         >
           <div
             style={{
               backgroundColor: '#433E3C',
-              flexGrow: 1,
-              flexBasis: '100%',
-              height: '85%',
+              height: '240px',
               width: '100%',
               marginBottom: '0',
               fontSize: '15px',
               color: 'white',
               padding: '12px',
-              overflow: 'auto',
+              overflow: 'scroll',
             }}
           >
             {this.state.chatbuffer.map((msg) => {

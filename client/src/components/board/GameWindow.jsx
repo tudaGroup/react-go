@@ -471,43 +471,7 @@ class GameWindow extends React.Component {
   }
 
   /**
-   * rendering stuff
-   */
-
-  /**
-   * display game info
-   */
-  gameInfo = () => {
-    return (
-      <div
-        className='infobox'
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '20px',
-        }}
-      >
-        <div
-          style={{
-            borderRadius: '50%',
-            border: '0',
-            backgroundColor: this.state.currentPlayer
-              ? this.state.currentPlayer.props.playerColor
-              : 'purple',
-            width: '20px',
-            height: '20px',
-          }}
-        ></div>
-        <p>Round {this.state.round + 1}</p>
-        <p>- {this.state.rated ? 'Rated' : 'Casual'} -</p>
-      </div>
-    );
-  };
-
-  /**
    * Renders a image of flag of given country(default US)
-   * Grabbbed from Profile.jsx
    */
   renderFlag = (country) => {
     let altText, countryID;
@@ -660,56 +624,55 @@ class GameWindow extends React.Component {
    */
   renderContentView = () => {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <div ref={(el) => (this.gameView = el)} className='boardview'>
-          <Board
-            boardSize={this.boardSize}
-            onClick={(x, y) => this.processInput(x, y, this.un)}
-            currField={this.state.history[this.state.round].gameState.field}
-            currPlayer={this.state.currentPlayer}
-            boardHW={this.state.canvasSize}
-          />
-        </div>
-        <div
-          ref={(el) => (this.infoview = el)}
-          style={{
-            margin: '30px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignContent: 'center',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-            backgroundColor: '#262320',
-            borderRadius: '10px',
-            minHeight: `${this.state.canvasSize * 0.7}px`,
-          }}
-        >
-          {this.displayInfo()}
-          <Chat
-            user={this.un}
-            socket={this.socket}
-            roomName={this.roomName}
-            customButtons={
-              this.ownPlayer !== null
-                ? [
-                    {
-                      label: 'Pass',
-                      onClick: () => this.handlePass(this.ownPlayer),
-                    },
-                    { label: 'Forfeit', onClick: this.onForfeit },
-                  ]
-                : []
-            }
-          />
-        </div>
+      <div>
+        <Row>
+          <Col span={12}>
+            <div ref={(el) => (this.gameView = el)} className='boardview'>
+              <Board
+                boardSize={this.boardSize}
+                onClick={(x, y) => this.processInput(x, y, this.un)}
+                currField={this.state.history[this.state.round].gameState.field}
+                currPlayer={this.state.currentPlayer}
+                boardHW={this.state.canvasSize}
+              />
+            </div>
+          </Col>
+          <Col>
+            <div
+              ref={(el) => (this.infoview = el)}
+              style={{
+                margin: '30px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignContent: 'center',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px',
+                backgroundColor: '#262320',
+                borderRadius: '10px',
+                minHeight: `${this.state.canvasSize * 0.7}px`,
+              }}
+            >
+              {this.displayInfo()}
+              <Chat
+                user={this.un}
+                socket={this.socket}
+                roomName={this.roomName}
+                customButtons={
+                  this.ownPlayer !== null
+                    ? [
+                        {
+                          label: 'Pass',
+                          onClick: () => this.handlePass(this.ownPlayer),
+                        },
+                        { label: 'Forfeit', onClick: this.onForfeit },
+                      ]
+                    : []
+                }
+              />
+            </div>
+          </Col>
+        </Row>
       </div>
     );
   };
@@ -826,7 +789,6 @@ class GameWindow extends React.Component {
         }}
       >
         {this.playerInfo(this.p1)}
-        {this.gameInfo()}
         {this.playerInfo(this.p2)}
       </div>
     );

@@ -376,6 +376,10 @@ h6 {
   overflow: auto;
 }
 
+.chatInput:focus {
+  outline: none;
+}
+
 .chatboxbutton {
   width: auto;
   margin: 2.5px;
@@ -388,6 +392,22 @@ h6 {
   border-radius: 5px;
   border: 0;
   color: white;
+}
+
+.chat__message {
+  background-color: #808080;
+  border-radius: 15px;
+  min-width: 15vw;
+  max-width: inherit;
+  display: inline-block;
+  padding: 5px 10px;
+  word-wrap: normal;
+}
+
+.chat__message__user {
+  font-size: 10px;
+  color: black;
+  font-weight: bold;
 }
 
 .close {
