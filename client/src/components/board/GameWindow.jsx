@@ -237,6 +237,11 @@ class GameWindow extends React.Component {
     this.setState({ waitingForResult: false, showEndWindow: true });
   };
 
+
+  onTimeout = () => {
+    this.gameHasEnded(this.state, this.state.currentPlayer === this.p2 ? this.p1 : this.p2);
+  }
+
   /**
    * formats and sends message over socket {data: {user: #username of the sending person, msg: #message to be sent}, room: #room name of current gameWindow}
    */
@@ -292,7 +297,7 @@ class GameWindow extends React.Component {
    * methods manipulating / using GameStates
    */
 
-  setImmediateWin(player) {
+  setImmediateWin = (player) => {
     this.setState({ winner: player, gameEnd: true });
     this.onEnd(player);
   }
@@ -387,19 +392,51 @@ class GameWindow extends React.Component {
     });
   };
 
+
   /**
-   * won player send results to server, the other player does not do anything
+   * updates game accordingly to new game state(terminates game if passCount >= 2), automatically passes if there are no moves to be made for current player
+   * @param {GameState} newState - new game state
    */
-  onEnd = (winner) => {
-    if (!winner) {
-      winner = this.p2; // if there is a draw, white wins because of starting disadvantage
+  updateGame(newState) {
+    this.setState(newState);
+
+    if (newState.history[newState.round].passCount >= 2) {
+      // game Ended
+      this.setImmediateWin(newState);
     }
-    if (winner.props.name !== this.un) return;
+  }
+
+
+  /**
+   * method called when game has ended
+   */
+  gameHasEnded = (newState, player) => {
+    let whoIsWinning = null;
+    let newGameState = newState.history[newState.round].gameState;
+    if (
+      newGameState.points[this.p1.props.name] >
+      newGameState.points[this.p2.props.name]
+    )
+      whoIsWinning = this.p1;
+    else if (
+      newGameState.points[this.p1.props.name] <
+      newGameState.points[this.p2.props.name]
+    )
+      whoIsWinning = this.p2;
+
+    whoIsWinning = !player ? whoIsWinning : player;
+    this.setState({ gameEnd: true, winner:  whoIsWinning});
+
+
+    if (!whoIsWinning) {
+      whoIsWinning = this.p2; // if there is a draw, white wins because of starting disadvantage
+    }
+    if (whoIsWinning.props.name !== this.un) return;
 
     api
       .patch(
         `/games/${this.gameData.data._id}`,
-        { player1Won: winner === this.p1 },
+        { player1Won: whoIsWinning === this.p1 },
         {
           headers: {
             Authorization: 'Bearer ' + this.token,
@@ -416,34 +453,8 @@ class GameWindow extends React.Component {
       .catch((e) => {
         console.log(e);
       });
-  };
-
-  /**
-   * updates game accordingly to new game state(terminates game if passCount >= 2), automatically passes if there are no moves to be made for current player
-   * @param {GameState} newState - new game state
-   */
-  updateGame(newState) {
-    this.setState(newState);
-
-    let whoIsWinning = null;
-    let newGameState = newState.history[newState.round].gameState;
-    if (
-      newGameState.points[this.p1.props.name] >
-      newGameState.points[this.p2.props.name]
-    )
-      whoIsWinning = this.p1;
-    else if (
-      newGameState.points[this.p1.props.name] <
-      newGameState.points[this.p2.props.name]
-    )
-      whoIsWinning = this.p2;
-
-    if (newState.history[newState.round].passCount >= 2) {
-      // game Ended
-      this.setState({ gameEnd: true, winner: whoIsWinning });
-      this.onEnd(whoIsWinning);
-    }
   }
+
 
   detectAnomaly(newState) {
     let newGameState = newState.history[newState.round].gameState;
@@ -592,6 +603,7 @@ class GameWindow extends React.Component {
               }
               startTime={this.state.time}
               increment={this.state.increment}
+              onTimeout={this.onTimeout}
             />
           </Col>
         </Row>
