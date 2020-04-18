@@ -7,6 +7,7 @@ import PasswordResetRequest from './login/PasswordResetRequest';
 import Profile from './profile/Profile';
 import Settings from './profile/Settings';
 import NotFound from './profile/NotFound';
+import EasterEgg from './EasterEgg';
 import history from '../history';
 import { Router, Switch, Route } from 'react-router-dom';
 import Particles from 'react-particles-js';
@@ -41,6 +42,7 @@ const App = () => {
         <Route path='/profile/:id' component={Profile} />
         <Route path='/settings' component={Settings} />
         <Route path='/notfound' component={NotFound} />
+        <Route path='/easteregg' component={EasterEgg} />
         <Route exact path='/' component={Main} />
       </Switch>
     </Router>
