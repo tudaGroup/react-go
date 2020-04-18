@@ -38,8 +38,9 @@ class Game{
   }
 
 
+
   /**
-   *
+   * @deprecated does not work in current state, need to be reworked if it is used(not used for applying board updates due to performance issues)
    * @param {GameState}   newState    - playing field on current path
    * @param {GameState}   oldState - old playing field prior to original playing field
    * @param {Number} depth    - how deep should the search go?
@@ -93,6 +94,12 @@ class Game{
   }
 
 
+  /**
+   * 
+   * @param {Field}  field  - playing field to be updated
+   * @param {Player} player - current player of to be updated field
+   * @param {Player} enemy  - enemy player of curren player of to be updated field
+   */
   static applyRulesBoard(field, player, enemy) {
 
     let currentPlayerStones = [];
@@ -149,7 +156,7 @@ class Game{
    */
   static getSpotsOf(field, player) {
     let res = [];
-    field.field.forEach((spot, index) => {
+    field.forEach((spot, index) => {
       if (spot === player)
         res.push([
           index % this.boardSize,
@@ -322,11 +329,11 @@ class Field extends Component {
             stroke='black'
           />
         ) : null}
-        {this.props.player !== null ? (
+        {this.props.player ? (
           <Circle
             x={xStart}
             y={yStart}
-            radius={this.props.fieldSize * 0.5}
+            radius={this.props.fieldSize * 0.42}
             fill={this.props.player.props.playerColor}
           />
         ) : null}

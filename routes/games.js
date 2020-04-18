@@ -124,8 +124,6 @@ router.patch('/games/:id', auth, async (req, res) => {
         0
       );
     }
-    player1.ratings.push({ rating: newRatingPlayer1, time: new Date() });
-    player2.ratings.push({ rating: newRatingPlayer2, time: new Date() });
 
     console.log(player1);
     console.log(player2);
