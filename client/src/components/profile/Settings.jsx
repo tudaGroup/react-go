@@ -31,20 +31,21 @@ const Settings = () => {
         },
       })
       .then((result) => {
-        if (result.data.country) {
-          setCountry(result.data.country);
+        const user = result.data.user;
+        if (user.country) {
+          setCountry(user.country);
         }
-        if (result.data.location) {
-          setLocation(result.data.location);
+        if (user.location) {
+          setLocation(user.location);
         }
-        if (result.data.biography) {
-          setBiography(result.data.biography);
+        if (user.biography) {
+          setBiography(user.biography);
         }
-        if (result.data.givenName) {
-          setGivenName(result.data.givenName);
+        if (user.givenName) {
+          setGivenName(user.givenName);
         }
-        if (result.data.surName) {
-          setSurName(result.data.surName);
+        if (user.surName) {
+          setSurName(user.surName);
         }
       });
   }, []);
