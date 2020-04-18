@@ -73,7 +73,7 @@ class Chat extends Component {
           style={{ 
             display: 'flex',
             flexGrow: 1,
-            flexWrap: 'wrap',
+            flexDirection: 'column',
             alignItems: 'center',
             width: '100%',
             borderRadius: '10px',
@@ -84,6 +84,7 @@ class Chat extends Component {
           <div
             style={{ 
               backgroundColor: 'grey', 
+              flexGrow: 1,
               flexBasis: '100%',
               height: '85%',
               width: '100%',
@@ -116,6 +117,7 @@ class Chat extends Component {
             {this.props.customButtons ? this.props.customButtons.map(customButton => {
               return (
                 <Button
+                  key={customButton.label}
                   className='chatboxbutton'
                   style={{ backgroundColor: '#34e346' }}
                   onClick={customButton.onClick}
