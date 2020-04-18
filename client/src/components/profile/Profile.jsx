@@ -61,7 +61,7 @@ const Profile = () => {
         // Fetch games
         api
           .get(
-            `games/${result.data.username}`,
+            `games/${result.data.user.username}`,
 
             {
               params: { page },
