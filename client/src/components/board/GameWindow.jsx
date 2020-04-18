@@ -5,7 +5,7 @@ import api from '../../api';
 import socketIOClient from 'socket.io-client';
 import { Game, Player, Board } from './BoardComponents';
 import Clock from './Clock';
-import { Row, Col } from 'antd';
+import { Row, Col, Button } from 'antd';
 import 'antd/dist/antd.css';
 import Chat from './Chat';
 import { Prompt } from 'react-router';
@@ -50,6 +50,7 @@ class GameWindow extends React.Component {
       winner: null,
       gameEnd: false,
       loading: true,
+      rated: false,
 
       boardToScreenRatio: 0.85,
       chatbuffer: [],
@@ -97,6 +98,10 @@ class GameWindow extends React.Component {
       history.push('/');
       return;
     }
+
+    this.setState({ rated: this.gameData.data.rated });
+
+    console.log(this.gameData);
 
     const user1 = await api.get(`users/${pl1}`, {
       headers: {
@@ -494,7 +499,8 @@ class GameWindow extends React.Component {
             height: '20px',
           }}
         ></div>
-        <div>Round {this.state.round + 1}</div>
+        <p>Round {this.state.round + 1}</p>
+        <p>- {this.state.rated ? 'Rated' : 'Casual'} -</p>
       </div>
     );
   };
@@ -652,7 +658,7 @@ class GameWindow extends React.Component {
   /**
    * renders the content view(the board and the info / chat)
    */
-  contentView = () => {
+  renderContentView = () => {
     return (
       <div
         style={{
@@ -708,6 +714,10 @@ class GameWindow extends React.Component {
     );
   };
 
+  pad(num) {
+    return num < 10 ? '0' + num : num;
+  }
+
   gameEnded = () => {
     let player1gainloss =
       this.newRatingPlayer1 - this.gameData.data.oldRatingPlayer1;
@@ -729,125 +739,67 @@ class GameWindow extends React.Component {
             backgroundColor: 'rgba(0, 0, 0, 0.6)',
           }}
         >
-          <div className='endGamePopup'>
+          <div className='endgame__popup'>
             <p style={{ textAlign: 'center', marginTop: 0 }}>
-              {this.ownPlayer === null
-                ? 'Game ended'
-                : this.ownPlayer === this.state.winner
-                ? 'Victory'
-                : 'Defeat'}
+              {this.ownPlayer === null ? (
+                'Game ended'
+              ) : this.ownPlayer === this.state.winner ? (
+                <span style={{ color: '#629923' }}>You won.</span>
+              ) : (
+                <span style={{ color: '#CC3233' }}>You lost.</span>
+              )}
             </p>
-            <div
-              className='endGamePopUpPlayer'
-              style={{ backgroundColor: 'black' }}
-            >
-              <div
-                style={{
-                  textAlign: 'center',
-                  marginBottom: '10px',
-                  textDecoration: 'underline',
-                }}
-              >
-                {this.p1.props.name}
-              </div>
-              <div style={{ fontSize: '22px' }}>
-                <p>
-                  Points: {this.newRatingPlayer1}{' '}
-                  <span
-                    style={{
-                      color:
-                        player1gainloss > 0
-                          ? '#1efa4a'
-                          : player1gainloss < 0
-                          ? 'red'
-                          : 'grey',
-                    }}
-                  >
-                    (
-                    {player1gainloss > 0
-                      ? '+' + player1gainloss.toString()
-                      : player1gainloss === 0
-                      ? '±0'
-                      : player1gainloss}
-                    )
-                  </span>
-                </p>
-                <p>
+            {this.ownPlayer === this.p1 ? (
+              <p className='endgame__info'>
+                <div>New rating: {this.newRatingPlayer1} </div>
+                <div>
                   Time left:{' '}
-                  {this.p1ClockRef.current.state.minutes.toString() +
+                  {this.pad(this.p1ClockRef.current.state.minutes) +
                     ':' +
-                    this.p1ClockRef.current.state.seconds.toString()}{' '}
-                </p>
-                <p>
-                  Score:{' '}
+                    this.pad(this.p1ClockRef.current.state.seconds)}{' '}
+                </div>
+                <div>
+                  Game score:{' '}
                   {
                     this.state.history[this.state.round].gameState.points[
                       this.p1.props.name
                     ]
                   }
-                </p>
-              </div>
-            </div>
-            <div
-              className='endGamePopUpPlayer'
-              style={{ backgroundColor: 'white', color: 'black ' }}
-            >
-              <div
-                style={{
-                  textAlign: 'center',
-                  marginBottom: '10px',
-                  textDecoration: 'underline',
-                }}
-              >
-                {this.p2.props.name}
-              </div>
-              <div style={{ fontSize: '22px' }}>
-                <p>
-                  Points: {this.newRatingPlayer2}{' '}
-                  <span
-                    style={{
-                      color:
-                        player2gainloss > 0
-                          ? '#1efa4a'
-                          : player2gainloss < 0
-                          ? 'red'
-                          : 'grey',
-                    }}
-                  >
-                    (
-                    {player2gainloss > 0
-                      ? '+' + player2gainloss.toString()
-                      : player2gainloss === 0
-                      ? '±0'
-                      : player2gainloss}
-                    )
-                  </span>
-                </p>
-                <p>
+                </div>
+              </p>
+            ) : (
+              <p className='endgame__info'>
+                <div>New rating: {this.newRatingPlayer2} </div>
+                <div>
                   Time left:{' '}
-                  {this.p2ClockRef.current.state.minutes.toString() +
+                  {this.pad(this.p2ClockRef.current.state.minutes) +
                     ':' +
-                    this.p2ClockRef.current.state.seconds.toString()}{' '}
-                </p>
-                <p>
-                  Score:{' '}
+                    this.pad(this.p2ClockRef.current.state.seconds)}
+                </div>
+                <div>
+                  Game score:{' '}
                   {
                     this.state.history[this.state.round].gameState.points[
                       this.p2.props.name
                     ]
                   }
-                </p>
-              </div>
+                </div>
+              </p>
+            )}
+            <div className='button'>
+              <Button
+                type='primary'
+                style={{
+                  marginTop: '15px',
+                }}
+                onClick={() => {
+                  history.push('/');
+                  window.location.reload();
+                }}
+              >
+                Back to Waiting Room
+              </Button>
             </div>
-            <button
-              className='popupbutton'
-              onClick={() => {
-                history.push('/');
-                window.location.reload();
-              }}
-            >
-              Back to Waiting Room
-            </button>
           </div>
         </div>
       );
@@ -933,7 +885,7 @@ class GameWindow extends React.Component {
               ReactGo
             </div>
           </div>
-          {this.contentView()}
+          {this.renderContentView()}
           {this.gameEnded(this.p1)}
         </div>
       </React.Fragment>
