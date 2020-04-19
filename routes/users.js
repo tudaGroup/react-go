@@ -35,15 +35,6 @@ router.get('/users/me', auth, async (req, res) => {
   res.send({ user: req.user, ratings: req.ratings });
 });
 
-router.get('/users/:name', auth, async (req, res) => {
-  let username = req.params.name;
-  let user = await User.findOne({ username });
-  if (!user) {
-    res.status(404).send();
-  }
-  const ratings = await user.getRatings();
-  res.send({ user, ratings });
-});
 
 // Updates any whitelisted attributes of the user
 router.patch('/users/me', auth, async (req, res) => {
@@ -100,7 +91,6 @@ router.get('/users/resetpassword', async (req, res) => {
       req.query.token,
       user.resettime.toISOString() + user.memberSince.toISOString()
     );
-    await user.save();
     res.status(201).send({ username: user.username });
   } catch (err) {
     if (err.name === 'TokenExpiredError') res.status(400).send('EXPIRED');
@@ -163,6 +153,22 @@ router.delete('/users/me', auth, async (req, res) => {
   } catch (e) {
     res.status(500).send();
   }
+});
+
+
+router.get('/users/:name', auth,  async (req, res, next) => {
+  let username = req.params.name;
+  if(username === 'resetpassword') {
+    next();
+    return;
+  }
+  let user = await User.findOne({ username });
+  if (!user) {
+    res.status(404).send();
+    return;
+  }
+  const ratings = await user.getRatings();
+  res.send({ user, ratings });
 });
 
 module.exports = router;
