@@ -20,6 +20,7 @@ export default class Clock extends Component {
         if (seconds === 0) {
           if (minutes === 0) {
             clearInterval(this.interval);
+            this.props.onTimeout();
           } else {
             this.setState({ minutes: minutes - 1, seconds: 59 });
           }

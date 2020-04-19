@@ -6,6 +6,7 @@ const router = new express.Router();
 
 // Saves the necessary information upon start of the game
 router.post('/games', auth, async (req, res) => {
+  console.log('postgames');
   const game = new Game(req.body);
 
   try {
@@ -18,6 +19,7 @@ router.post('/games', auth, async (req, res) => {
 
 // Return the games between two players
 router.get('/games', auth, async (req, res) => {
+  console.log('getgames');
   let player1 = req.query.player1;
   let player2 = req.query.player2;
 
@@ -32,6 +34,7 @@ router.get('/games', auth, async (req, res) => {
 
 // Return the active game between two players
 router.get('/games/active', auth, async (req, res) => {
+  console.log('gamesactive');
   let player1 = req.query.player1;
   let player2 = req.query.player2;
   let games = await await Game.find({
@@ -51,6 +54,7 @@ router.get('/games/active', auth, async (req, res) => {
 
 // Return all games of a given player
 router.get('/games/:player', auth, async (req, res) => {
+  console.log('gamesplayer');
   let player = req.params.player;
   console.log(player);
   let games = await Game.find({
@@ -76,6 +80,7 @@ router.get('/games/:player', auth, async (req, res) => {
 
 // Update rating changes and winner after completion of the game
 router.patch('/games/:id', auth, async (req, res) => {
+  console.log('patchgame');
   let player1Won = req.body.player1Won;
   console.log('Game Patch Received');
   console.log(req.body);

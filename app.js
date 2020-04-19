@@ -28,7 +28,6 @@ var onlinePlayers = [];
 
 // Socket.IO
 io.on('connection', (socket) => {
-  console.log('New client connected');
   socket.username = '';
   socket.customRooms = [];
   socket.emit('challenges', getChallenges()); // Send challenges to new client
@@ -36,7 +35,6 @@ io.on('connection', (socket) => {
   // sets username for socket connection(later to be used for deleting all challenges from this user)
   socket.on('online', (name) => {
     socket.username = name;
-    console.log(socket.username + ' online');
   });
 
   socket.on('updateChallenges', (data) => {
@@ -82,12 +80,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log(socket.username + ' disconnected');
     let filteredChallenges = getChallenges().filter(
       (challenge) => challenge.name !== socket.username
     );
-    console.log(socket.username + '´s rooms');
-    console.log(socket.customRooms);
 
     for (let i = 0; i < socket.customRooms.length; i++) {
       let room = socket.customRooms[i];
