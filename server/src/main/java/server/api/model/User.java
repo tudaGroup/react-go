@@ -1,6 +1,5 @@
 package server.api.model;
 
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,6 +10,7 @@ import java.util.Date;
 
 
 @Entity
+@Table(name="user_details")
 public class User implements UserDetails {
   @Id
   @GeneratedValue(strategy = GenerationType.AUTO)
